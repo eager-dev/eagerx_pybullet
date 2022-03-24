@@ -85,7 +85,6 @@ class PybulletBridge(Bridge):
         # Initialize simulator
         self._p, self.physics_client_id = self._start_simulator(gui)
 
-        # todo: initialize world
         world = World(
             self._p,
             gravity=9.81,
@@ -157,3 +156,6 @@ class PybulletBridge(Bridge):
     @register.outputs(tick=UInt64)
     def callback(self, t_n: float, **kwargs: Dict[str, Union[List[Message], float, int]]):
         self.simulator["world"].step()
+
+    def shutdown(self) -> None:
+        self._p.disconnect()
