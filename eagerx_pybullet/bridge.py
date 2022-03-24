@@ -115,7 +115,8 @@ class PybulletBridge(Bridge):
                         p.loadPlugin(egl.get_filename(), "_eglRendererPlugin")
                     else:
                         p.loadPlugin("eglRendererPlugin")
-                    # STRANGE! Must pre-render atleast nun_runs=2 images, else crash in _camera_callback(...)
+                    #
+                    # todo: STRANGE! Must pre-render atleast nun_runs=2 images, else crash in _camera_callback(...)
                     # self._test_fps_rendering(p, physics_client_id, num_runs=100)
         except BaseException:
             pass
