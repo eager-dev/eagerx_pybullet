@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.2 (2022-03-29)
+### Fix
+* Tests with objects, enginenodes and enginestates  ([`6930516`](https://github.com/eager-dev/eagerx_pybullet/commit/6930516537435c759f441c0afcca2cfa9da2b94f))
+
+### Documentation
+* Fix badges ([`f26a417`](https://github.com/eager-dev/eagerx_pybullet/commit/f26a4170b85d47446df617a10ab6d56dca5a378b))
+
 ## v0.1.1 (2022-03-24)
 ### Fix
 * Dummy commit to trigger release ([`043bda1`](https://github.com/eager-dev/eagerx_pybullet/commit/043bda1627725c81e30d15fc18b87630db090899))
