@@ -16,7 +16,7 @@ class Camera(Object):
     entity_id = "Camera"
 
     @staticmethod
-    @register.sensors(rgb=Image, pos=Float32MultiArray, orientation=Float32MultiArray)
+    @register.sensors(rgb=Image, rgba=Image, rgbd=Image, pos=Float32MultiArray, orientation=Float32MultiArray)
     @register.engine_states(pos=Float32MultiArray, orientation=Float32MultiArray)
     @register.config(
         urdf=None,
@@ -70,7 +70,27 @@ class Camera(Object):
             dtype="float32",
             low=0,
             high=1,
-            shape=spec.config.render_shape,
+            shape=spec.config.render_shape + [3],
+        )
+
+        # Rgba
+        spec.sensors.rgba.rate = rate
+        spec.sensors.rgba.space_converter = SpaceConverter.make(
+            "Space_Image",
+            dtype="float32",
+            low=0,
+            high=1,
+            shape=spec.config.render_shape + [4],
+        )
+
+        # Rgbd
+        spec.sensors.rgbd.rate = rate
+        spec.sensors.rgbd.space_converter = SpaceConverter.make(
+            "Space_Image",
+            dtype="float32",
+            low=0,
+            high=1,
+            shape=spec.config.render_shape + [4],
         )
 
     @staticmethod
@@ -153,21 +173,43 @@ class Camera(Object):
             mode="orientation",
             links=[spec.config.optical_link],
         )
+
+        # rgb
         rgb = EngineNode.make(
             "CameraSensor", "rgb", rate=spec.sensors.rgb.rate, process=2, mode="rgb", render_shape=spec.config.render_shape
         )
         rgb.config.inputs.append("pos")
         rgb.config.inputs.append("orientation")
 
+        # rgba
+        rgba = EngineNode.make(
+            "CameraSensor", "rgba", rate=spec.sensors.rgb.rate, process=2, mode="rgba", render_shape=spec.config.render_shape
+        )
+        rgba.config.inputs.append("pos")
+        rgba.config.inputs.append("orientation")
+
+        # rgbd
+        rgbd = EngineNode.make(
+            "CameraSensor", "rgbd", rate=spec.sensors.rgb.rate, process=2, mode="rgbd", render_shape=spec.config.render_shape
+        )
+        rgbd.config.inputs.append("pos")
+        rgbd.config.inputs.append("orientation")
+
         # Create actuator engine nodes
         # Rate=None, but we will connect it to an actuator (thus will use the rate set in the agnostic specification)
         # Connect all engine nodes
-        graph.add([pos, orientation, rgb])
+        graph.add([pos, orientation, rgb, rgbd, rgba])
         graph.connect(source=pos.outputs.obs, sensor="pos")
         graph.connect(source=orientation.outputs.obs, sensor="orientation")
         graph.connect(source=rgb.outputs.image, sensor="rgb")
+        graph.connect(source=rgba.outputs.image, sensor="rgba")
+        graph.connect(source=rgbd.outputs.image, sensor="rgbd")
         graph.connect(source=pos.outputs.obs, target=rgb.inputs.pos)
         graph.connect(source=orientation.outputs.obs, target=rgb.inputs.orientation)
+        graph.connect(source=pos.outputs.obs, target=rgba.inputs.pos)
+        graph.connect(source=orientation.outputs.obs, target=rgba.inputs.orientation)
+        graph.connect(source=pos.outputs.obs, target=rgbd.inputs.pos)
+        graph.connect(source=orientation.outputs.obs, target=rgbd.inputs.orientation)
 
         # Check graph validity (commented out)
         # graph.is_valid(plot=True)

@@ -100,8 +100,8 @@ class XmlBasedRobot:
 
         return parts, joints, ordered_joints, self.robot_body
 
-    def reset_pose(self, position, orientation):
-        self.parts[self.robot_name].reset_pose(position, orientation)
+    # def reset_pose(self, position, orientation):
+    #     self.parts[self.robot_name].reset_pose(position, orientation)
 
 
 class URDFBasedRobot(XmlBasedRobot):
@@ -158,28 +158,28 @@ class URDFBasedRobot(XmlBasedRobot):
                 self.robot_objectid = [self.robot_objectid]
             self.parts, self.jdict, self.ordered_joints, self.robot_body = self.addToScene(self._p, self.robot_objectid)
 
-    def reset(self, bullet_client):
-        self._load_robot(bullet_client)
-
-        self.robot_specific_reset(self._p)
-
+    # def reset(self, bullet_client):
+    #     self._load_robot(bullet_client)
+    #
+    #     self.robot_specific_reset(self._p)
+    #
         # optimization: calc_state() can calculate something in self.* for calc_potential() to use
-        s, obs = self.calc_state_obs()
-        return s, obs
+        # s, obs = self.calc_state_obs()
+        # return s, obs
 
 
-class Pose_Helper:  # dummy class to comply to original interface
-    def __init__(self, body_part):
-        self.body_part = body_part
-
-    def xyz(self):
-        return self.body_part.current_position()
-
-    def rpy(self):
-        return pybullet.getEulerFromQuaternion(self.body_part.current_orientation())
-
-    def orientation(self):
-        return self.body_part.current_orientation()
+# class Pose_Helper:  # dummy class to comply to original interface
+#     def __init__(self, body_part):
+#         self.body_part = body_part
+#
+#     def xyz(self):
+#         return self.body_part.current_position()
+#
+#     def rpy(self):
+#         return pybullet.getEulerFromQuaternion(self.body_part.current_orientation())
+#
+#     def orientation(self):
+#         return self.body_part.current_orientation()
 
 
 class BodyPart:
@@ -191,7 +191,7 @@ class BodyPart:
         self.bodyPartIndex = bodyPartIndex
         self.initialPosition = self.current_position()
         self.initialOrientation = self.current_orientation()
-        self.bp_pose = Pose_Helper(self)
+        # self.bp_pose = Pose_Helper(self)
 
     def state_fields_of_pose_of(
         self, body_id, link_id=-1
@@ -242,8 +242,8 @@ class BodyPart:
     def reset_pose(self, position, orientation):
         self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], position, orientation)
 
-    def pose(self):
-        return self.bp_pose
+    # def pose(self):
+    #     return self.bp_pose
 
     def contact_list(self):
         return self._p.getContactPoints(self.bodies[self.bodyIndex], -1, self.bodyPartIndex, -1)

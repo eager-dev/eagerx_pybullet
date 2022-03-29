@@ -185,7 +185,7 @@ class JointSensor(EngineNode):
                     obs.append(vel)
             elif mode == "force_torque":  # (Fx, Fy, Fz, Mx, My, Mz)
                 for _i, (_pos, _vel, force_torque, _applied_torque) in enumerate(states):
-                    obs.append(force_torque)
+                    obs += list(force_torque)
             elif mode == "applied_torque":  # (T)
                 for _i, (_pos, _vel, _force_torque, applied_torque) in enumerate(states):
                     obs.append(applied_torque)
@@ -251,10 +251,6 @@ class JointController(EngineNode):
         for _idx, pb_name in enumerate(joints):
             bodyid, jointindex = self.robot.jdict[pb_name].get_bodyid_jointindex()
             self.bodyUniqueId.append(bodyid), self.jointIndices.append(jointindex)
-            if mode == "force_torque":
-                self._p.enableJointForceTorqueSensor(
-                    bodyUniqueId=bodyid, jointIndex=jointindex, enableSensor=True, physicsClientId=self.physics_client_id
-                )
 
         self.joint_cb = self._joint_control(
             self._p, self.mode, self.bodyUniqueId[0], self.jointIndices, self.pos_gain, self.vel_gain, self.vel_target
@@ -404,9 +400,9 @@ class CameraSensor(EngineNode):
         if self.simulator:
             self._p = self.simulator["client"]
         else:
-            from pybullet_utils import bullet_client
-
-            self._p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
+            raise NotImplementedError("Currently, rendering leads to an error when connecting via shared memory.")
+            # from pybullet_utils import bullet_client
+            # self._p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
             # self._p = pybullet.connect(pybullet.SHARED_MEMORY, key=1234)
         print("[rgb]: ", self._p._client)
         self.mode = mode

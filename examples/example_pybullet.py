@@ -1,3 +1,7 @@
+import os
+os.environ["PYBULLET_EGL"] = "1"
+# ^^^^ before importing eagerx_pybullet
+
 # ROS packages required
 from eagerx import Object, Bridge, initialize, log, process
 
@@ -10,24 +14,12 @@ import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unu
 import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
 import tests.objects # Registers PybulletBridge # noqa # pylint: disable=unused-import
 
-# OTHER
-import os
-import pytest
 
-NP = process.NEW_PROCESS
-ENV = process.ENVIRONMENT
+if __name__ == "__main__":
+    roscore = initialize("eagerx_core", anonymous=True, log_level=log.INFO)
 
-@pytest.mark.timeout(60)
-@pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
-@pytest.mark.parametrize("p", [ENV, NP])
-def test_eagerx_pybullet(control_mode, p):
-    # Start roscore
-    roscore = initialize("eagerx_core", anonymous=True, log_level=log.WARN)
-
-    # Define unique name for test environment
-    name = f"{control_mode}_{p}"
-    bridge_p = p
-    rate = 30
+    # Define rate
+    rate = 60.0
 
     # Initialize empty graph
     graph = Graph.create()
@@ -45,8 +37,9 @@ def test_eagerx_pybullet(control_mode, p):
     graph.add(cube)
 
     # Create arm
-    arm = Object.make("Vx300s", "viper", sensors=["pos", "vel", "ft", "at"], actuators=["pos_control", "gripper_control"],
-                      states=["pos", "vel", "gripper"], rate=rate, control_mode=control_mode)
+    arm = Object.make("Vx300s", "viper", sensors=["pos", "vel", "ft", "at"],
+                      actuators=["pos_control", "gripper_control"],
+                      states=["pos", "vel", "gripper"], rate=rate, control_mode="position_control")
     graph.add(arm)
 
     # Connect the nodes
@@ -57,8 +50,12 @@ def test_eagerx_pybullet(control_mode, p):
     graph.connect(source=arm.sensors.ft, observation="ft")
     graph.connect(source=arm.sensors.at, observation="at")
 
+    # Show in the gui
+    # graph.gui()
+
     # Define bridges
-    bridge = Bridge.make("PybulletBridge", rate=rate, gui=False, is_reactive=True, real_time_factor=0, process=bridge_p)
+    bridge = Bridge.make("PybulletBridge", rate=rate, gui=True, is_reactive=True, real_time_factor=0,
+                         process=process.ENVIRONMENT)
 
     # Define step function
     def step_fn(prev_obs, obs, action, steps):
@@ -71,15 +68,19 @@ def test_eagerx_pybullet(control_mode, p):
         return obs, rwd, done, info
 
     # Initialize Environment
-    env = EagerxEnv(name=name, rate=rate, graph=graph, bridge=bridge, step_fn=step_fn)
+    env = EagerxEnv(name="rx", rate=rate, graph=graph, bridge=bridge, step_fn=step_fn)
+
+    # First train in simulation
+    env.render("human")
 
     # Evaluate for 30 seconds in simulation
     _, action = env.reset(), env.action_space.sample()
-    for i in range(3):
+    print(f"Episode 0")
+    for i in range(int(50000 * rate)):
         obs, reward, done, info = env.step(action)
         if done:
             _, action = env.reset(), env.action_space.sample()
-            print(f"Episode {i}")
+            print(f"Episode {1}")
     print("\n[Finished]")
     env.shutdown()
     if roscore:
