@@ -15,13 +15,10 @@ from eagerx.core.specs import BridgeSpec
 from eagerx_pybullet.pybullet_world import World
 from eagerx_pybullet.pybullet_robot import URDFBasedRobot
 
-os.environ["PYBULLET_EGL"] = "1"
-# ^^^^ before importing pybullet_gym
-try:
-    if os.environ["PYBULLET_EGL"]:
-        import pkgutil
-except BaseException:
-    pass
+
+if int(os.environ.get("PYBULLET_EGL", 0)):
+    import pkgutil
+
 
 try:
     import pybullet
@@ -100,26 +97,23 @@ class PybulletBridge(Bridge):
         if gui:
             p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
         else:
+            # p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
             p = bullet_client.BulletClient()
+
+        print("[bridge]: ", p._client)
 
         physics_client_id = p._client
         p.resetSimulation()
         p.setPhysicsEngineParameter(deterministicOverlappingPairs=1)
         # optionally enable EGL for faster headless rendering
-        try:
-            if os.environ["PYBULLET_EGL"]:
-                con_mode = p.getConnectionInfo()["connectionMethod"]
-                if con_mode == p.DIRECT:
-                    egl = pkgutil.get_loader("eglRenderer")
-                    if egl:
-                        p.loadPlugin(egl.get_filename(), "_eglRendererPlugin")
-                    else:
-                        p.loadPlugin("eglRendererPlugin")
-                    # STRANGE! Must pre-render atleast nun_runs=2 images, else crash in _camera_callback(...)
-                    # self._test_fps_rendering(p, physics_client_id, num_runs=100)
-        except BaseException:
-            pass
-
+        if int(os.environ.get("PYBULLET_EGL", 0)):
+            con_mode = p.getConnectionInfo()["connectionMethod"]
+            if con_mode == p.DIRECT:
+                egl = pkgutil.get_loader("eglRenderer")
+                if egl:
+                    p.loadPlugin(egl.get_filename(), "_eglRendererPlugin")
+                else:
+                    p.loadPlugin("eglRendererPlugin")
         return p, physics_client_id
 
     @register.bridge_config(
