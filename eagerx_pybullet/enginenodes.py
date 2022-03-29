@@ -1,14 +1,114 @@
 from typing import Optional, List
+from scipy.spatial.transform import Rotation
 import pybullet
 
 # IMPORT ROS
 from std_msgs.msg import UInt64, Float32MultiArray
+from sensor_msgs.msg import Image
 
 # IMPORT EAGERX
 from eagerx.core.constants import process
 from eagerx.utils.utils import Msg
-from eagerx.core.entities import EngineNode
+from eagerx.core.entities import EngineNode, SpaceConverter
 import eagerx.core.register as register
+
+
+class LinkSensor(EngineNode):
+    @staticmethod
+    @register.spec("LinkSensor", EngineNode)
+    def spec(
+        spec,
+        name: str,
+        rate: float,
+        links: List[str] = None,
+        process: Optional[int] = process.BRIDGE,
+        color: Optional[str] = "cyan",
+        mode: str = "position",
+    ):
+        """LinkSensor spec"""
+        # Performs all the steps to fill-in the params with registered info about all functions.
+        spec.initialize(LinkSensor)
+
+        # Modify default node params
+        spec.config.name = name
+        spec.config.rate = rate
+        spec.config.process = process
+        spec.config.inputs = ["tick"]
+        spec.config.outputs = ["obs"]
+
+        # Set parameters, defined by the signature of cls.initialize(...)
+        spec.config.links = links if isinstance(links, list) else []
+        spec.config.mode = mode
+
+    def initialize(self, links, mode):
+        self.obj_name = self.config["name"]
+        assert self.process == process.BRIDGE, (
+            "Simulation node requires a reference to the simulator," " hence it must be launched in the Bridge process"
+        )
+        flag = self.obj_name in self.simulator["robots"]
+        assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation node.'
+        self.robot = self.simulator["robots"][self.obj_name]
+        # If no links are provided, take baselink
+        if len(links) == 0:
+            for pb_name, part in self.robot.parts.items():
+                bodyid, linkindex = part.get_bodyid_linkindex()
+                if linkindex == -1:
+                    links.append(pb_name)
+        self.links = links
+        self.mode = mode
+        self._p = self.simulator["client"]
+        self.physics_client_id = self._p._client
+        self.link_cb = self._link_measurement(self._p, self.mode, self.robot, links)
+
+    @register.states()
+    def reset(self):
+        pass
+
+    @register.inputs(tick=UInt64)
+    @register.outputs(obs=Float32MultiArray)
+    def callback(self, t_n: float, tick: Optional[Msg] = None):
+        obs = self.link_cb()
+        return dict(obs=Float32MultiArray(data=obs))
+
+    @staticmethod
+    def _link_measurement(p, mode, robot, links):
+        if mode == "position":  # (x, y, z)
+
+            def cb():
+                obs = []
+                for pb_name in links:
+                    obs += robot.parts[pb_name].get_position().tolist()
+                return obs
+
+        elif mode == "orientation":  # (x, y, z, w)
+
+            def cb():
+                obs = []
+                for pb_name in links:
+                    obs += robot.parts[pb_name].get_orientation().tolist()
+                return obs
+
+        elif mode == "velocity":  # (vx, vy, vz)
+
+            def cb():
+                obs = []
+                for pb_name in links:
+                    vel, _ = robot.parts[pb_name].speed()
+                    obs += vel.tolist()
+                return obs
+
+        elif mode == "angular_vel":  # (vx, vy, vz)
+
+            def cb():
+                obs = []
+                for pb_name in links:
+                    _, rate = robot.parts[pb_name].speed()
+                    obs += rate.tolist()
+                return obs
+
+        else:
+            raise ValueError(f"Mode '{mode}' not recognized.")
+        return cb
 
 
 class JointSensor(EngineNode):
@@ -232,6 +332,155 @@ class JointController(EngineNode):
                     velocityGains=vel_gain,
                     physicsClientId=p._client,
                 )
+
+        else:
+            raise ValueError(f"Mode '{mode}' not recognized.")
+        return cb
+
+
+class CameraSensor(EngineNode):
+    @staticmethod
+    @register.spec("CameraSensor", EngineNode)
+    def spec(
+        spec,
+        name: str,
+        rate: float,
+        process: Optional[int] = process.BRIDGE,
+        color: Optional[str] = "cyan",
+        mode: str = "position",
+        inputs: List[str] = None,
+        render_shape: List[int] = None,
+    ):
+        """CameraSensor spec"""
+        # Performs all the steps to fill-in the params with registered info about all functions.
+        spec.initialize(CameraSensor)
+
+        # Modify default node params
+        spec.config.name = name
+        spec.config.rate = rate
+        spec.config.process = process
+        spec.config.inputs = inputs if isinstance(inputs, list) else ["tick"]
+        spec.config.outputs = ["image"]
+
+        # Add states if position and orientation are not inputs.
+        spec.config.states = []
+        if "pos" not in spec.config.inputs:
+            spec.config.states.append("pos")
+        if "orientation" not in spec.config.inputs:
+            spec.config.states.append("orientation")
+
+        # Set parameters, defined by the signature of cls.initialize(...)
+        spec.config.mode = mode
+        spec.config.render_shape = render_shape if isinstance(render_shape, list) else [480, 680]
+
+        # Position
+        spec.states.pos.space_converter = SpaceConverter.make(
+            "Space_Float32MultiArray",
+            dtype="float32",
+            low=[-1, -1, 0],
+            high=[1, 1, 0],
+        )
+
+        # Orientation
+        spec.states.orientation.space_converter = SpaceConverter.make(
+            "Space_Float32MultiArray",
+            dtype="float32",
+            low=[0, 0, -1, -1],
+            high=[0, 0, 1, 1],
+        )
+
+    def initialize(
+        self,
+        mode,
+        render_shape,
+        fov=57,
+        near_val=0.1,
+        far_val=100,
+        up_axis=2,
+        dist=1,
+        flags=pybullet.ER_NO_SEGMENTATION_MASK,
+        renderer=pybullet.ER_BULLET_HARDWARE_OPENGL,
+    ):
+        if self.simulator:
+            self._p = self.simulator["client"]
+        else:
+            from pybullet_utils import bullet_client
+
+            self._p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
+            # self._p = pybullet.connect(pybullet.SHARED_MEMORY, key=1234)
+        print("[rgb]: ", self._p._client)
+        self.mode = mode
+        self.height, self.width = render_shape
+        self.intrinsic = dict(fov=fov, nearVal=near_val, farVal=far_val, aspect=self.height / self.width)
+        self.cb_args = dict(
+            width=self.width,
+            height=self.height,
+            viewMatrix=None,
+            projectionMatrix=None,
+            flags=flags,
+            renderer=renderer,
+            physicsClientId=self._p._client,
+        )
+        self.cam_cb = self._camera_measurement(self._p, self.mode, self.cb_args)
+
+    @register.states(pos=Float32MultiArray, orientation=Float32MultiArray)
+    def reset(self, pos=None, orientation=None):
+        self.cb_args["projectionMatrix"] = pybullet.computeProjectionMatrixFOV(**self.intrinsic)
+
+        if pos is not None and orientation is not None:
+            self.cb_args["viewMatrix"] = self._view_matrix(pos.data, orientation.data, self._p._client)
+        if pos:
+            self.pos = pos.data
+        if orientation:
+            self.orientation = orientation.data
+
+    @register.inputs(tick=UInt64, pos=Float32MultiArray, orientation=Float32MultiArray)
+    @register.outputs(image=Image)
+    def callback(self, t_n: float, tick: Msg = None, pos: Msg = None, orientation: Msg = None):
+        if pos:
+            self.pos = pos.msgs[-1].data
+        if orientation:
+            self.orientation = orientation.msgs[-1].data
+
+        if pos is not None or orientation is not None:
+            self.cb_args["viewMatrix"] = self._view_matrix(self.pos, self.orientation, self._p._client)
+        obs = self.cam_cb()
+        img = Image(
+            data=obs.tobytes("C"), height=self.height, width=self.width, encoding="rgb8", step=obs.shape[-1] * self.width
+        )
+        return dict(image=img)
+
+    @staticmethod
+    def _view_matrix(position, orientation, physicsClientId):
+        r = Rotation.from_quat(orientation)
+        cameraEyePosition = position
+        cameraTargetPosition = r.as_matrix()[:, 2]
+        cameraUpVector = -r.as_matrix()[:, 1]
+        return pybullet.computeViewMatrix(
+            cameraEyePosition, cameraTargetPosition, cameraUpVector, physicsClientId=physicsClientId
+        )
+
+    @staticmethod
+    def _camera_measurement(p, mode, cb_args):
+        if mode == "rgb":
+
+            def cb():
+                _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                return rgba[:, :, :3]
+
+        elif mode == "rgba":
+
+            def cb():
+                _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                return rgba[:, :, :4]
+
+        elif mode == "rgbd":
+
+            def cb():
+                _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                depth *= 255  # Convert depth to uint8
+                rgba[:, :, 3] = depth.astype("uint8")  # replace alpha channel with depth
+                return rgba[:, :, :4]
 
         else:
             raise ValueError(f"Mode '{mode}' not recognized.")

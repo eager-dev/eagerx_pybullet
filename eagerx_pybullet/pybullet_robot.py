@@ -226,11 +226,13 @@ class BodyPart:
     def get_orientation(self):
         return self.current_orientation()
 
-    def reset_position(self, position):
-        self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], position, self.get_orientation())
-
-    def reset_orientation(self, orientation):
-        self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], self.get_position(), orientation)
+    # def reset_position(self, position):
+    #     orientation = self._p.getBasePositionAndOrientation(self.bodyIndex)[1]
+    #     self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], position, orientation)
+    #
+    # def reset_orientation(self, orientation):
+    #     position = self._p.getBasePositionAndOrientation(self.bodyIndex)[0]
+    #     self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], position, orientation)
 
     def reset_velocity(self, linearVelocity=None, angularVelocity=None):
         linearVelocity = linearVelocity if linearVelocity else [0, 0, 0]

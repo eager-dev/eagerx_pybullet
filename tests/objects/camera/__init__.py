@@ -1,0 +1,1 @@
+import tests.objects.camera.objects  # noqa # pylint: disable=unused-import
