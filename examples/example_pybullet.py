@@ -14,6 +14,9 @@ import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unu
 import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
 import tests.objects # Registers PybulletBridge # noqa # pylint: disable=unused-import
 
+# todo: Check if joint motors need to be disabled
+# todo: Add arg that allows users to exclude observation_spaces in EagerEnv
+
 
 if __name__ == "__main__":
     roscore = initialize("eagerx_core", anonymous=True, log_level=log.INFO)
@@ -47,7 +50,7 @@ if __name__ == "__main__":
     graph.connect(action="gripper", target=arm.actuators.gripper_control)
     graph.connect(source=arm.sensors.pos, observation="observation")
     graph.connect(source=arm.sensors.vel, observation="vel")
-    graph.connect(source=arm.sensors.ft, observation="ft")
+    graph.connect(source=arm.sensors.ft, observation="ft", window=0)
     graph.connect(source=arm.sensors.at, observation="at")
 
     # Show in the gui
@@ -68,7 +71,9 @@ if __name__ == "__main__":
         return obs, rwd, done, info
 
     # Initialize Environment
-    env = EagerxEnv(name="rx", rate=rate, graph=graph, bridge=bridge, step_fn=step_fn)
+    env = EagerxEnv(name="rx", rate=rate, graph=graph, bridge=bridge, step_fn=step_fn, exclude=["at"])
+
+    obs_space = env.observation_space
 
     # First train in simulation
     env.render("human")

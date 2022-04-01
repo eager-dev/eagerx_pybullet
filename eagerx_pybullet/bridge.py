@@ -8,6 +8,7 @@ from std_msgs.msg import UInt64
 from genpy.message import Message
 
 # RX IMPORTS
+from eagerx.utils.utils import get_param_with_blocking
 from eagerx.core.constants import process, ERROR
 import eagerx.core.register as register
 from eagerx.core.entities import Bridge
@@ -100,8 +101,6 @@ class PybulletBridge(Bridge):
             # p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
             p = bullet_client.BulletClient()
 
-        print("[bridge]: ", p._client)
-
         physics_client_id = p._client
         p.resetSimulation()
         p.setPhysicsEngineParameter(deterministicOverlappingPairs=1)
@@ -126,11 +125,19 @@ class PybulletBridge(Bridge):
         # add objects to simulator (we have a ref to the simulator with self.simulator)
         rospy.loginfo(f'Adding object "{obj_name}" of type "{entity_id}" to the simulator.')
 
+        # Get urdf location
+        if bridge_config["urdf"].endswith(".urdf"):  # Full path specified
+            urdf_path = bridge_config["urdf"]
+        else:  # Retrieve on ROS paramserver with key, write to /tmp file
+            urdf_txt = get_param_with_blocking(bridge_config["urdf"])
+            urdf_path = f"/tmp/{bridge_config['urdf'].replace('/', '_')}.urdf"
+            with open(urdf_path, 'w') as file:
+                file.write(urdf_txt)
         # Add objects
         if bridge_config["urdf"]:
             self.simulator["robots"][obj_name] = URDFBasedRobot(
                 self._p,
-                model_urdf=bridge_config["urdf"],
+                model_urdf=urdf_path,
                 robot_name=obj_name,
                 basePosition=bridge_config["basePosition"],
                 baseOrientation=bridge_config["baseOrientation"],
