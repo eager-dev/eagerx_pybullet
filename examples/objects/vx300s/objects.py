@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 # ROS IMPORTS
 from std_msgs.msg import Float32MultiArray
 
@@ -17,10 +19,9 @@ class Vx300s(Object):
 
     @staticmethod
     @register.sensors(pos=Float32MultiArray, vel=Float32MultiArray, ft=Float32MultiArray, at=Float32MultiArray)
-    @register.actuators(pos_control=Float32MultiArray, gripper_control=Float32MultiArray)
+    @register.actuators(joint_control=Float32MultiArray, gripper_control=Float32MultiArray)
     @register.engine_states(pos=Float32MultiArray, vel=Float32MultiArray, gripper=Float32MultiArray)
     @register.config(
-        robot_type=None,
         joint_names=None,
         gripper_names=None,
         fixed_base=True,
@@ -30,7 +31,21 @@ class Vx300s(Object):
         control_mode=None,
     )
     def agnostic(spec: ObjectSpec, rate):
-        """Agnostic definition of the Vx300s"""
+        """This methods builds the agnostic definition for a vx300s manipulator.
+
+        Registered (agnostic) config parameters (should probably be set in the spec() function):
+        - joint_names: List of arm joints.
+        - gripper_names: List of gripper joints.
+        - fixed_base: Force the base of the loaded object to be static.
+        - self_collision: Enable self collisions.
+        - base_pos: Base position of the object [x, y, z].
+        - base_or: Base orientation of the object in quaternion [x, y, z, w].
+        - control_mode: Control mode for the arm joints.
+                        Available: `position_control`, `velocity_control`, `pd_control`, and `torque_control`.
+
+        :param spec: Holds the desired configuration.
+        :param rate: Rate (Hz) at which the callback is called.
+        """
         # Register standard converters, space_converters, and processors
         import eagerx.converters  # noqa # pylint: disable=unused-import
 
@@ -65,9 +80,9 @@ class Vx300s(Object):
         )
 
         # Set actuator properties: (space_converters, rate, etc...)
-        spec.actuators.pos_control.rate = rate
+        spec.actuators.joint_control.rate = rate
         spec.actuators.gripper_control.rate = rate
-        spec.actuators.pos_control.space_converter = SpaceConverter.make(
+        spec.actuators.joint_control.space_converter = SpaceConverter.make(
             "Space_Float32MultiArray",
             dtype="float32",
             low=[-3.14159, -3.14159, -3.14159, -3.14159, -3.14159, -3.14159],
@@ -97,17 +112,31 @@ class Vx300s(Object):
     def spec(
         spec: ObjectSpec,
         name: str,
-        sensors=None,
-        actuators=None,
-        states=None,
-        rate=30,
-        base_pos=None,
-        base_or=None,
-        self_collision=True,
-        fixed_base=True,
-        control_mode="position_control",
+        sensors: List[str] = None,
+        actuators: List[str] = None,
+        states: List[str] = None,
+        rate: float = 30.,
+        base_pos: Optional[List[int]] = None,
+        base_or: Optional[List[int]] = None,
+        self_collision: bool = False,
+        fixed_base: bool = True,
+        control_mode: str = "position_control",
     ):
-        """Object spec of Vx300s"""
+        """A spec to create a vx300s robot.
+
+        :param spec: The desired object configuration.
+        :param name: Name of the object (topics are placed within this namespace).
+        :param sensors: A list of selected sensors. Must be a subset of the registered sensors.
+        :param actuators: A list of selected actuators. Must be a subset of the registered actuators.
+        :param states: A list of selected states. Must be a subset of the registered actuators.
+        :param rate: The default rate at which all sensors and actuators run. Can be modified via the spec API.
+        :param base_pos: Base position of the object [x, y, z].
+        :param base_or: Base orientation of the object in quaternion [x, y, z, w].
+        :param self_collision: Enable self collisions.
+        :param fixed_base: Force the base of the loaded object to be static.
+        :param control_mode: Control mode for the arm joints. Available: `position_control`, `velocity_control`, `pd_control`, and `torque_control`.
+        :return: ObjectSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         Vx300s.initialize_spec(spec)
 
@@ -115,11 +144,10 @@ class Vx300s(Object):
         # Only allow changes to the agnostic params (rates, windows, (space)converters, etc...
         spec.config.name = name
         spec.config.sensors = sensors if sensors else ["pos", "vel", "ft", "at"]
-        spec.config.actuators = actuators if actuators else ["pos_control", "gripper_control"]
+        spec.config.actuators = actuators if actuators else ["joint_control", "gripper_control"]
         spec.config.states = states if states else ["pos", "vel", "gripper"]
 
         # Add registered agnostic params
-        spec.config.robot_type = "vx300s"
         spec.config.joint_names = ["waist", "shoulder", "elbow", "forearm_roll", "wrist_angle", "wrist_rotate"]
         spec.config.gripper_names = ["left_finger", "right_finger"]
         spec.config.base_pos = base_pos if base_pos else [0, 0, 0]
@@ -138,12 +166,11 @@ class Vx300s(Object):
     def pybullet_bridge(spec: ObjectSpec, graph: EngineGraph):
         """Engine-specific implementation (Pybullet) of the object."""
         # Import any object specific entities for this bridge
-        import tests.objects  # noqa # pylint: disable=unused-import
+        import examples.objects  # noqa # pylint: disable=unused-import
         import eagerx_pybullet  # noqa # pylint: disable=unused-import
 
         # Set object arguments (as registered per register.bridge_params(..) above the bridge.add_object(...) method.
-        path = os.path.dirname(tests.objects.__file__)
-        path += f"/{spec.config.robot_type}/descriptions/urdf/{spec.config.robot_type}.urdf"
+        path = os.path.dirname(examples.objects.__file__) + "/vx300s/descriptions/urdf/vx300s.urdf"
         spec.PybulletBridge.urdf = path
         spec.PybulletBridge.basePosition = spec.config.base_pos
         spec.PybulletBridge.baseOrientation = spec.config.base_or
@@ -172,10 +199,10 @@ class Vx300s(Object):
 
         # Create actuator engine nodes
         # Rate=None, but we will connect it to an actuator (thus will use the rate set in the agnostic specification)
-        pos_control = EngineNode.make(
+        joint_control = EngineNode.make(
             "JointController",
-            "pos_control",
-            rate=spec.actuators.pos_control.rate,
+            "joint_control",
+            rate=spec.actuators.joint_control.rate,
             process=2,
             joints=spec.config.joint_names,
             mode=spec.config.control_mode,
@@ -196,12 +223,12 @@ class Vx300s(Object):
         )
 
         # Connect all engine nodes
-        graph.add([pos_sensor, pos_control, gripper, vel_sensor, ft_sensor, at_sensor])
+        graph.add([pos_sensor, joint_control, gripper, vel_sensor, ft_sensor, at_sensor])
         graph.connect(source=pos_sensor.outputs.obs, sensor="pos")
         graph.connect(source=vel_sensor.outputs.obs, sensor="vel")
         graph.connect(source=ft_sensor.outputs.obs, sensor="ft")
         graph.connect(source=at_sensor.outputs.obs, sensor="at")
-        graph.connect(actuator="pos_control", target=pos_control.inputs.action)
+        graph.connect(actuator="joint_control", target=joint_control.inputs.action)
         graph.connect(actuator="gripper_control", target=gripper.inputs.action)
 
         # Check graph validity (commented out)

@@ -1,5 +1,7 @@
+from typing import List, Optional
 from eagerx.core.entities import EngineState
 import eagerx.core.register as register
+from eagerx.core.specs import EngineStateSpec
 import numpy as np
 from scipy.spatial.transform import Rotation
 
@@ -7,7 +9,14 @@ from scipy.spatial.transform import Rotation
 class JointState(EngineState):
     @staticmethod
     @register.spec("JointState", EngineState)
-    def spec(spec, joints, mode):
+    def spec(spec: EngineStateSpec, joints: List[str], mode: str):
+        """A spec to create an EngineState that resets a set of specified joints to the desired state.
+
+        :param spec: Holds the desired configuration in a Spec object.
+        :param joints: List of joints to be reset. Its order determines the ordering of the reset.
+        :param mode: Available: `position`, `velocity`.
+        :return: EngineStateSpec
+        """
         spec.initialize(JointState)
         spec.config.joints = joints
         spec.config.mode = mode
@@ -75,7 +84,14 @@ class JointState(EngineState):
 class BaseState(EngineState):
     @staticmethod
     @register.spec("BaseState", EngineState)
-    def spec(spec, mode, link=None):
+    def spec(spec: EngineStateSpec, mode: str, link: Optional[str] = None):
+        """A spec to create an EngineState that resets a specified link to the desired state.
+
+        :param spec: Holds the desired configuration in a Spec object.
+        :param mode: Available: `position`, `orientation`, 'velocity', and 'angular_vel`.
+        :param link: The link that is to be reset. By default, the baselink is reset.
+        :return: EngineStateSpec
+        """
         spec.initialize(BaseState)
         spec.config.mode = mode
         spec.config.link = link

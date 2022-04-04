@@ -29,7 +29,25 @@ class Camera(Object):
         calibration_link=None,
     )
     def agnostic(spec: ObjectSpec, rate):
-        """Agnostic definition of the Camera"""
+        """This methods builds the agnostic definition for a camera.
+
+        Registered (agnostic) config parameters (should probably be set in the spec() function):
+        - urdf: A fullpath (ending with .urdf), a key that points to the urdf (xml)string on the
+                rosparam server, or a urdf within pybullet's search path. The `pybullet_data` package is
+                included in the search path.
+        - fixed_base: Force the base of the loaded object to be static.
+        - self_collision: Enable self collisions.
+        - base_pos: Base position of the object [x, y, z].
+        - base_or: Base orientation of the object in quaternion [x, y, z, w].
+        - render_shape: The shape of the produced images [height, width].
+        - optical_link: Link related to the pose from which to render images.
+        - calibration_link: Link related to the pose that is reset.
+
+        :param spec: Holds the desired configuration.
+        :param rate: Rate (Hz) at which the callback is called.
+        """
+
+        # """Agnostic definition of the Camera"""
         # Register standard converters, space_converters, and processors
         import eagerx.converters  # noqa # pylint: disable=unused-import
 
@@ -110,7 +128,25 @@ class Camera(Object):
         optical_link: str = None,
         calibration_link: str = None,
     ):
-        """Object spec of Camera"""
+        """A spec to create a camera.
+
+        :param spec: The desired object configuration.
+        :param name: Name of the object (topics are placed within this namespace).
+        :param sensors: A list of selected sensors. Must be a subset of the registered sensors.
+        :param states: A list of selected states. Must be a subset of the registered actuators.
+        :param rate: The default rate at which all sensors run. Can be modified via the spec API.
+        :param base_pos: Base position of the object [x, y, z].
+        :param base_or: Base orientation of the object in quaternion [x, y, z, w].
+        :param self_collision: Enable self collisions.
+        :param fixed_base: Force the base of the loaded object to be static.
+        :param render_shape: The shape of the produced images [height, width].
+        :param urdf: A fullpath (ending with .urdf), a key that points to the urdf (xml)string on the
+                     rosparam server, or a urdf within pybullet's search path. The `pybullet_data` package is
+                     included in the search path.
+        :param optical_link: Link related to the pose from which to render images.
+        :param calibration_link: Link related to the pose that is reset.
+        :return: ObjectSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         Camera.initialize_spec(spec)
 

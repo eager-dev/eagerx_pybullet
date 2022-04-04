@@ -1,3 +1,4 @@
+from eagerx.utils.utils import get_param_with_blocking
 import numpy as np
 import rospy
 import os
@@ -135,11 +136,14 @@ class URDFBasedRobot(XmlBasedRobot):
         if self.doneLoading == 0:
             self.ordered_joints = []
             self.doneLoading = 1
-            if self.model_urdf.startswith("/"):
+            if self.model_urdf.endswith(".urdf"):  # Full path specified
                 fullpath = self.model_urdf
-            else:
-                fullpath = os.path.join(os.path.dirname(__file__), "assets", self.model_urdf)
-            if not os.path.exists(fullpath):
+            else:  # Retrieve on ROS paramserver with key, write to /tmp file
+                urdf_txt = get_param_with_blocking(self.model_urdf)
+                fullpath = f"/tmp/{self.model_urdf.replace('/', '_')}.urdf"
+                with open(fullpath, "w") as file:
+                    file.write(urdf_txt)
+            if fullpath.startswith("/") and not os.path.exists(fullpath):
                 raise IOError("File %s does not exist" % fullpath)
             print(fullpath)
 
@@ -157,29 +161,6 @@ class URDFBasedRobot(XmlBasedRobot):
             if np.isscalar(self.robot_objectid):
                 self.robot_objectid = [self.robot_objectid]
             self.parts, self.jdict, self.ordered_joints, self.robot_body = self.addToScene(self._p, self.robot_objectid)
-
-    # def reset(self, bullet_client):
-    #     self._load_robot(bullet_client)
-    #
-    #     self.robot_specific_reset(self._p)
-    #
-        # optimization: calc_state() can calculate something in self.* for calc_potential() to use
-        # s, obs = self.calc_state_obs()
-        # return s, obs
-
-
-# class Pose_Helper:  # dummy class to comply to original interface
-#     def __init__(self, body_part):
-#         self.body_part = body_part
-#
-#     def xyz(self):
-#         return self.body_part.current_position()
-#
-#     def rpy(self):
-#         return pybullet.getEulerFromQuaternion(self.body_part.current_orientation())
-#
-#     def orientation(self):
-#         return self.body_part.current_orientation()
 
 
 class BodyPart:

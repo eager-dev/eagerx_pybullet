@@ -8,7 +8,7 @@ from eagerx.core.graph import Graph
 # Implementation specific
 import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unused-import
 import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
-import tests.objects # Registers PybulletBridge # noqa # pylint: disable=unused-import
+import examples.objects  # Registers PybulletBridge # noqa # pylint: disable=unused-import
 
 # OTHER
 import os
@@ -16,6 +16,7 @@ import pytest
 
 NP = process.NEW_PROCESS
 ENV = process.ENVIRONMENT
+
 
 @pytest.mark.timeout(60)
 @pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
@@ -33,24 +34,21 @@ def test_eagerx_pybullet(control_mode, p):
     graph = Graph.create()
 
     # Create camera
-    urdf = os.path.dirname(tests.objects.__file__)
-    urdf += "/camera/assets/realsense2_d435.urdf"
+    urdf = os.path.dirname(examples.objects.__file__) + "/camera/assets/realsense2_d435.urdf"
     cam = Object.make("Camera", "cam", rate=rate, sensors=["rgb", "rgba", "rgbd"], urdf=urdf, optical_link="camera_color_optical_frame", calibration_link="camera_bottom_screw_frame")
     graph.add(cam)
 
     # Create solid object
-    import pybullet_data
-    urdf = "%s/%s.urdf" % (pybullet_data.getDataPath(), "cube_small")
-    cube = Object.make("Solid", "cube", urdf=urdf, rate=rate)
+    cube = Object.make("Solid", "cube", urdf="cube_small.urdf", rate=rate)
     graph.add(cube)
 
     # Create arm
-    arm = Object.make("Vx300s", "viper", sensors=["pos", "vel", "ft", "at"], actuators=["pos_control", "gripper_control"],
+    arm = Object.make("Vx300s", "viper", sensors=["pos", "vel", "ft", "at"], actuators=["joint_control", "gripper_control"],
                       states=["pos", "vel", "gripper"], rate=rate, control_mode=control_mode)
     graph.add(arm)
 
     # Connect the nodes
-    graph.connect(action="joints", target=arm.actuators.pos_control)
+    graph.connect(action="joints", target=arm.actuators.joint_control)
     graph.connect(action="gripper", target=arm.actuators.gripper_control)
     graph.connect(source=arm.sensors.pos, observation="observation")
     graph.connect(source=arm.sensors.vel, observation="vel")
