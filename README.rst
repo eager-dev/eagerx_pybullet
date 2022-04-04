@@ -44,9 +44,9 @@ Examples
 For examples on how to use this package to add a pybullet implementation for your objects, please see:
 
 - `Example environment <examples/example.py>`_
-   - `Example manipulator (vx300s) <examples/vx300s/objects.py>`_
-   - `Example camera <examples/camera/objects.py>`_
-   - `Example solid <examples/solid/objects.py>`_
+   - `Example manipulator (vx300s) <examples/objects/vx300s/objects.py>`_
+   - `Example camera <examples/objects/camera/objects.py>`_
+   - `Example solid <examples/objects/solid/objects.py>`_
 
 Documentation
 =============
