@@ -17,7 +17,20 @@ class Solid(Object):
     @register.engine_states(pos=Float32MultiArray, vel=Float32MultiArray, orientation=Float32MultiArray, angular_vel=Float32MultiArray)
     @register.config(urdf=None, fixed_base=True, self_collision=True, base_pos=[0, 0, 0], base_or=[0, 0, 0, 1])
     def agnostic(spec: ObjectSpec, rate):
-        """Agnostic definition of the Solid"""
+        """This methods builds the agnostic definition for a solid object (e.g. can, table, etc...).
+
+        Registered (agnostic) config parameters (should probably be set in the spec() function):
+        - urdf: A fullpath (ending with .urdf), a key that points to the urdf (xml)string on the
+                rosparam server, or a urdf within pybullet's search path. The `pybullet_data` package is
+                included in the search path.
+        - fixed_base: Force the base of the loaded object to be static.
+        - self_collision: Enable self collisions.
+        - base_pos: Base position of the object [x, y, z].
+        - base_or: Base orientation of the object in quaternion [x, y, z, w].
+
+        :param spec: Holds the desired configuration.
+        :param rate: Rate (Hz) at which the callback is called.
+        """
         # Register standard converters, space_converters, and processors
         import eagerx.converters  # noqa # pylint: disable=unused-import
 
@@ -95,7 +108,22 @@ class Solid(Object):
         self_collision=True,
         fixed_base=True,
     ):
-        """Object spec of Solid"""
+        """A spec to create a solid object (e.g. can, table, etc...).
+
+        :param spec: The desired object configuration.
+        :param name: Name of the object (topics are placed within this namespace).
+        :param urdf: A fullpath (ending with .urdf), a key that points to the urdf (xml)string on the
+                     rosparam server, or a urdf within pybullet's search path. The `pybullet_data` package is
+                     included in the search path.
+        :param sensors: A list of selected sensors. Must be a subset of the registered sensors.
+        :param states: A list of selected states. Must be a subset of the registered actuators.
+        :param rate: The default rate at which all sensors run. Can be modified via the spec API.
+        :param base_pos: Base position of the object [x, y, z].
+        :param base_or: Base orientation of the object in quaternion [x, y, z, w].
+        :param self_collision: Enable self collisions.
+        :param fixed_base: Force the base of the loaded object to be static.
+        :return: ObjectSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         Solid.initialize_spec(spec)
 

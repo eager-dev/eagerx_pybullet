@@ -39,6 +39,32 @@ You can install the package using pip:
     EAGERx depends on a minimal ROS installation. Fortunately, you **can** use eagerx anywhere as you would any python package,
     so it does **not** impose a ROS package structure on your project.
 
+Examples
+========
+For examples on how to use this package to add a pybullet implementation for your objects, please see:
+
+- `Example environment <examples/example.py>`_
+   - `Example manipulator (vx300s) <examples/objects/vx300s/objects.py>`_
+   - `Example camera <examples/objects/camera/objects.py>`_
+   - `Example solid <examples/objects/solid/objects.py>`_
+
+Documentation
+=============
+
+- `PybulletBridge <eagerx_pybullet/bridge.py>`_
+
+- `EngineNodes <eagerx_pybullet/enginenodes.py>`_:
+   - `LinkSensors <eagerx_pybullet/enginenodes.py>`_
+   - `JointSensors <eagerx_pybullet/enginenodes.py>`_
+   - `JointController <eagerx_pybullet/enginenodes.py>`_
+   - `CameraSensor <eagerx_pybullet/enginenodes.py>`_
+   - Or implement a custom engine node (see `here <https://eagerx.readthedocs.io/en/master/guide/developer_guide/index.html>`_).
+
+- `EngineStates <eagerx_pybullet/enginestates.py>`_:
+   - `JointState <eagerx_pybullet/enginestates.py>`_
+   - `BaseState <eagerx_pybullet/enginestates.py>`_
+   - Or implement a custom engine state (see `here <https://eagerx.readthedocs.io/en/master/guide/developer_guide/index.html>`_).
+
 Cite EAGERx
 ===========
 If you are using EAGERx for your scientific publications, please cite:

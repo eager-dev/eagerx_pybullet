@@ -7,7 +7,8 @@ from std_msgs.msg import UInt64, Float32MultiArray
 from sensor_msgs.msg import Image
 
 # IMPORT EAGERX
-from eagerx.core.constants import process
+from eagerx.core.specs import NodeSpec
+from eagerx.core.constants import process as p
 from eagerx.utils.utils import Msg
 from eagerx.core.entities import EngineNode, SpaceConverter
 import eagerx.core.register as register
@@ -17,15 +18,25 @@ class LinkSensor(EngineNode):
     @staticmethod
     @register.spec("LinkSensor", EngineNode)
     def spec(
-        spec,
+        spec: NodeSpec,
         name: str,
         rate: float,
         links: List[str] = None,
-        process: Optional[int] = process.BRIDGE,
+        process: Optional[int] = p.BRIDGE,
         color: Optional[str] = "cyan",
         mode: str = "position",
     ):
-        """LinkSensor spec"""
+        """A spec to create a LinkSensor node that provides sensor measurements for the specified set of links.
+
+        :param spec: Holds the desired configuration.
+        :param name: User specified node name.
+        :param rate: Rate (Hz) at which the callback is called.
+        :param links: List of links to be included in the measurements. Its order determines the ordering of the measurements.
+        :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
+        :param color: Specifies the color of logged messages & node color in the GUI.
+        :param mode: Available: `position`, `orientation`, `velocity`, and `angular_vel`
+        :return: NodeSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         spec.initialize(LinkSensor)
 
@@ -42,7 +53,7 @@ class LinkSensor(EngineNode):
 
     def initialize(self, links, mode):
         self.obj_name = self.config["name"]
-        assert self.process == process.BRIDGE, (
+        assert self.process == p.BRIDGE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Bridge process"
         )
         flag = self.obj_name in self.simulator["robots"]
@@ -115,15 +126,26 @@ class JointSensor(EngineNode):
     @staticmethod
     @register.spec("JointSensor", EngineNode)
     def spec(
-        spec,
+        spec: NodeSpec,
         name: str,
         rate: float,
         joints: List[str],
-        process: Optional[int] = process.BRIDGE,
+        process: Optional[int] = p.BRIDGE,
         color: Optional[str] = "cyan",
         mode: str = "position",
     ):
-        """JointSensor spec"""
+        """A spec to create a JointSensor node that provides sensor measurements for the specified set of joints.
+
+        :param spec: Holds the desired configuration in a Spec object.
+        :param name: User specified node name.
+        :param rate: Rate (Hz) at which the callback is called.
+        :param joints: List of joints to be included in the measurements. Its order determines the ordering of the
+                       measurements.
+        :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
+        :param color: Specifies the color of logged messages & node color in the GUI.
+        :param mode: Available: `position`, `velocity`, `force_torque`, and `applied_torque`.
+        :return: NodeSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         spec.initialize(JointSensor)
 
@@ -140,7 +162,7 @@ class JointSensor(EngineNode):
 
     def initialize(self, joints, mode):
         self.obj_name = self.config["name"]
-        assert self.process == process.BRIDGE, (
+        assert self.process == p.BRIDGE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Bridge process"
         )
         flag = self.obj_name in self.simulator["robots"]
@@ -185,7 +207,7 @@ class JointSensor(EngineNode):
                     obs.append(vel)
             elif mode == "force_torque":  # (Fx, Fy, Fz, Mx, My, Mz)
                 for _i, (_pos, _vel, force_torque, _applied_torque) in enumerate(states):
-                    obs.append(force_torque)
+                    obs += list(force_torque)
             elif mode == "applied_torque":  # (T)
                 for _i, (_pos, _vel, _force_torque, applied_torque) in enumerate(states):
                     obs.append(applied_torque)
@@ -200,18 +222,34 @@ class JointController(EngineNode):
     @staticmethod
     @register.spec("JointController", EngineNode)
     def spec(
-        spec,
+        spec: NodeSpec,
         name: str,
         rate: float,
         joints: List[str],
-        process: Optional[int] = process.BRIDGE,
+        process: Optional[int] = p.BRIDGE,
         color: Optional[str] = "green",
         mode: str = "position_control",
         vel_target: List[float] = None,
         pos_gain: List[float] = None,
         vel_gain: List[float] = None,
     ):
-        """JointController spec"""
+        """A spec to create a JointController node that controls a set of joints.
+
+        For more info on `vel_target`, `pos_gain`, and `vel_gain`, see `setJointMotorControlMultiDofArray` in
+        https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#
+
+        :param spec: Holds the desired configuration in a Spec object.
+        :param name: User specified node name.
+        :param rate: Rate (Hz) at which the callback is called.
+        :param joints: List of controlled joints. Its order determines the ordering of the applied commands.
+        :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
+        :param color: Specifies the color of logged messages & node color in the GUI.
+        :param mode: Available: `position_control`, `velocity_control`, `pd_control`, and `torque_control`.
+        :param vel_target: The desired velocity. Ordering according to `joints`.
+        :param pos_gain: Position gain. Ordering according to `joints`.
+        :param vel_gain: Velocity gain. Ordering according to `joints`.
+        :return: NodeSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         spec.initialize(JointController)
 
@@ -232,7 +270,7 @@ class JointController(EngineNode):
     def initialize(self, joints, mode, vel_target, pos_gain, vel_gain):
         # We will probably use self.simulator[self.obj_name] in callback & reset.
         self.obj_name = self.config["name"]
-        assert self.process == process.BRIDGE, (
+        assert self.process == p.BRIDGE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Bridge process"
         )
         flag = self.obj_name in self.simulator["robots"]
@@ -251,10 +289,6 @@ class JointController(EngineNode):
         for _idx, pb_name in enumerate(joints):
             bodyid, jointindex = self.robot.jdict[pb_name].get_bodyid_jointindex()
             self.bodyUniqueId.append(bodyid), self.jointIndices.append(jointindex)
-            if mode == "force_torque":
-                self._p.enableJointForceTorqueSensor(
-                    bodyUniqueId=bodyid, jointIndex=jointindex, enableSensor=True, physicsClientId=self.physics_client_id
-                )
 
         self.joint_cb = self._joint_control(
             self._p, self.mode, self.bodyUniqueId[0], self.jointIndices, self.pos_gain, self.vel_gain, self.vel_target
@@ -342,16 +376,38 @@ class CameraSensor(EngineNode):
     @staticmethod
     @register.spec("CameraSensor", EngineNode)
     def spec(
-        spec,
+        spec: NodeSpec,
         name: str,
         rate: float,
-        process: Optional[int] = process.BRIDGE,
+        process: Optional[int] = p.BRIDGE,
         color: Optional[str] = "cyan",
-        mode: str = "position",
+        mode: str = "rgb",
         inputs: List[str] = None,
         render_shape: List[int] = None,
+        fov: float = 57.0,
+        near_val: float = 0.1,
+        far_val: float = 100.0,
     ):
-        """CameraSensor spec"""
+        """A spec to create a CameraSensor node that provides images that can be used for perception and/or rendering.
+
+        For more info on `fov`, `near_val`, and `far_val`, see the `Synthetic Camera Rendering` section in
+        https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.33wr3gwy5kuj
+
+        :param spec: Holds the desired configuration in a Spec object.
+        :param name: User specified node name.
+        :param rate: Rate (Hz) at which the callback is called.
+        :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
+        :param color: Specifies the color of logged messages & node color in the GUI.
+        :param mode: Available: `rgb`, `rgbd`, and `rgba`.
+        :param inputs: Optionally, if the camera pose changes over time select `pos` and/or `orientation` & connect
+                       accordingly, to dynamically change the camera view. If not selected, `pos` and/or `orientation` are
+                       selected as states. This means you can choose a static camera pose at the start of every episode.
+        :param render_shape: The shape of the produced images [height, width].
+        :param fov: Field of view.
+        :param near_val: Near plane distance.
+        :param far_val: Far plane distance.
+        :return: NodeSpec
+        """
         # Performs all the steps to fill-in the params with registered info about all functions.
         spec.initialize(CameraSensor)
 
@@ -372,6 +428,9 @@ class CameraSensor(EngineNode):
         # Set parameters, defined by the signature of cls.initialize(...)
         spec.config.mode = mode
         spec.config.render_shape = render_shape if isinstance(render_shape, list) else [480, 680]
+        spec.config.fov = fov
+        spec.config.near_val = near_val
+        spec.config.far_val = far_val
 
         # Position
         spec.states.pos.space_converter = SpaceConverter.make(
@@ -396,19 +455,17 @@ class CameraSensor(EngineNode):
         fov=57,
         near_val=0.1,
         far_val=100,
-        up_axis=2,
-        dist=1,
         flags=pybullet.ER_NO_SEGMENTATION_MASK,
         renderer=pybullet.ER_BULLET_HARDWARE_OPENGL,
     ):
         if self.simulator:
             self._p = self.simulator["client"]
         else:
-            from pybullet_utils import bullet_client
-
-            self._p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
+            raise NotImplementedError("Currently, rendering leads to an error when connecting via shared memory.")
+            # from pybullet_utils import bullet_client
+            # self._p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
             # self._p = pybullet.connect(pybullet.SHARED_MEMORY, key=1234)
-        print("[rgb]: ", self._p._client)
+        # print("[rgb]: ", self._p._client)
         self.mode = mode
         self.height, self.width = render_shape
         self.intrinsic = dict(fov=fov, nearVal=near_val, farVal=far_val, aspect=self.height / self.width)
