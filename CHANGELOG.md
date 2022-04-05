@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.4 (2022-04-05)
+### Fix
+* Refactor baselink and add egl as argument ([`de18dad`](https://github.com/eager-dev/eagerx_pybullet/commit/de18dad214058d03d8eac3e9e7c33e203c84fd75))
+
 ## v0.1.3 (2022-04-04)
 ### Fix
 * Update poetry lock & broken readme links ([`84ef468`](https://github.com/eager-dev/eagerx_pybullet/commit/84ef4684c9ebff44279c6fa6cac26f1d786c23a0))
