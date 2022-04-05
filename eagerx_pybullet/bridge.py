@@ -1,6 +1,5 @@
 # Pybullet imports
 from typing import Optional, Dict, Union, List
-import os
 
 # ROS IMPORTS
 import rospy
@@ -14,11 +13,6 @@ from eagerx.core.entities import Bridge, SpaceConverter
 from eagerx.core.specs import BridgeSpec
 from eagerx_pybullet.world import World
 from eagerx_pybullet.robot import URDFBasedRobot
-
-
-if int(os.environ.get("PYBULLET_EGL", 0)):
-    import pkgutil
-
 
 try:
     import pybullet
@@ -44,6 +38,7 @@ class PybulletBridge(Bridge):
         states: List[str] = None,
         world_fn: Optional[str] = None,
         gui: bool = True,
+        egl: bool = True,
         gravity: float = -9.81,
         physics_engine_params: Optional[Dict] = None,
     ):
@@ -62,6 +57,7 @@ class PybulletBridge(Bridge):
                          function builds-up the (static) world (i.e. loads urdfs into pybullet). See
                          `eagerx_pybullet.world/empty_world_with_plane` for an example.
         :param gui: Create a GUI connection with 3D OpenGL rendering within the same process space as PyBullet.
+        :param egl: Enable hardware accelerated OpenGL rendering without a X11 context for faster headless rendering.
         :param gravity: Sets the gravity constant along the y-axis.
         :param physics_engine_params: Parameter keys with their desired value. See the pybullet documentation for more
                                       info on the physics engine parameters:
@@ -89,6 +85,7 @@ class PybulletBridge(Bridge):
         # Add custom params
         spec.config.world_fn = world_fn
         spec.config.gui = gui
+        spec.config.egl = egl
         spec.config.gravity = gravity
         spec.config.physics_engine_params = physics_engine_params if isinstance(physics_engine_params, dict) else None
 
@@ -98,7 +95,7 @@ class PybulletBridge(Bridge):
         spec.states.contactERP.space_converter = SpaceConverter.make("Space_Float32", 0.005, 0.005, dtype="float32")
         spec.states.frictionERP.space_converter = SpaceConverter.make("Space_Float32", 0.9, 0.9, dtype="float32")
 
-    def initialize(self, world_fn, gui, gravity, physics_engine_params: Dict = None):
+    def initialize(self, world_fn, gui, egl, gravity, physics_engine_params: Dict = None):
         """
         Initializes the bridge to pybullet.
 
@@ -106,13 +103,14 @@ class PybulletBridge(Bridge):
                          function builds-up the (static) world (i.e. loads urdfs into pybullet). See
                          `eagerx_pybullet.world/empty_world_with_plane` for an example.
         :param gui: Create a GUI connection with 3D OpenGL rendering within the same process space as PyBullet.
+        :param egl: Enable hardware accelerated OpenGL rendering without a X11 context for faster headless rendering.
         :param gravity: Sets the gravity constant along the y-axis.
         :param physics_engine_params: Parameter keys with their desired value. See the pybullet documentation for more
                                       info on the physics engine parameters:
         """
 
         # Connect to pybullet
-        self._p, self.physics_client_id = self._start_simulator(gui)
+        self._p, self.physics_client_id = self._start_simulator(gui, egl)
         # Initialzize
         world = World(
             self._p,
@@ -130,7 +128,7 @@ class PybulletBridge(Bridge):
         # Create pybullet simulator that will be shared with all EngineStates & EngineNodes (if launched in same process).
         self.simulator = dict(client=self._p, world=world, robots={})
 
-    def _start_simulator(self, gui):
+    def _start_simulator(self, gui, egl):
         if gui:
             p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
         else:
@@ -141,9 +139,11 @@ class PybulletBridge(Bridge):
         p.resetSimulation()
         p.setPhysicsEngineParameter(deterministicOverlappingPairs=1)
         # optionally enable EGL for faster headless rendering
-        if int(os.environ.get("PYBULLET_EGL", 0)):
+        if egl:
             con_mode = p.getConnectionInfo()["connectionMethod"]
             if con_mode == p.DIRECT:
+                import pkgutil
+
                 egl = pkgutil.get_loader("eglRenderer")
                 if egl:
                     p.loadPlugin(egl.get_filename(), "_eglRendererPlugin")

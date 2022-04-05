@@ -158,10 +158,10 @@ class Solid(Object):
         spec.PybulletBridge.self_collision = spec.config.self_collision
 
         # Create engine_states (no agnostic states defined in this case)
-        spec.PybulletBridge.states.pos = EngineState.make("BaseState", mode="position")
-        spec.PybulletBridge.states.vel = EngineState.make("BaseState", mode="velocity")
-        spec.PybulletBridge.states.orientation = EngineState.make("BaseState", mode="orientation")
-        spec.PybulletBridge.states.angular_vel = EngineState.make("BaseState", mode="angular_vel")
+        spec.PybulletBridge.states.pos = EngineState.make("LinkState", mode="position")
+        spec.PybulletBridge.states.vel = EngineState.make("LinkState", mode="velocity")
+        spec.PybulletBridge.states.orientation = EngineState.make("LinkState", mode="orientation")
+        spec.PybulletBridge.states.angular_vel = EngineState.make("LinkState", mode="angular_vel")
 
         # Create sensor engine nodes
         # Rate=None, but we will connect them to sensors (thus will use the rate set in the agnostic specification)

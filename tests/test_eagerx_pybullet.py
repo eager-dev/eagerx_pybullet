@@ -1,11 +1,6 @@
-# ROS packages required
-from eagerx import Object, Bridge, initialize, log, process
-
 # Environment
 from eagerx.core.env import EagerxEnv
 from eagerx.core.graph import Graph
-
-# Implementation specific
 import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unused-import
 import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
 import examples.objects  # Registers PybulletBridge # noqa # pylint: disable=unused-import
@@ -14,8 +9,8 @@ import examples.objects  # Registers PybulletBridge # noqa # pylint: disable=unu
 import os
 import pytest
 
-NP = process.NEW_PROCESS
-ENV = process.ENVIRONMENT
+NP = eagerx.process.NEW_PROCESS
+ENV = eagerx.process.ENVIRONMENT
 
 
 @pytest.mark.timeout(60)
@@ -23,7 +18,7 @@ ENV = process.ENVIRONMENT
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
     # Start roscore
-    roscore = initialize("eagerx_core", anonymous=True, log_level=log.WARN)
+    roscore = eagerx.initialize("eagerx_core", anonymous=True, log_level=eagerx.log.WARN)
 
     # Define unique name for test environment
     name = f"{control_mode}_{p}"
@@ -35,16 +30,31 @@ def test_eagerx_pybullet(control_mode, p):
 
     # Create camera
     urdf = os.path.dirname(examples.objects.__file__) + "/camera/assets/realsense2_d435.urdf"
-    cam = Object.make("Camera", "cam", rate=rate, sensors=["rgb", "rgba", "rgbd"], urdf=urdf, optical_link="camera_color_optical_frame", calibration_link="camera_bottom_screw_frame")
+    cam = eagerx.Object.make(
+        "Camera",
+        "cam",
+        rate=rate,
+        sensors=["rgb", "rgba", "rgbd"],
+        urdf=urdf,
+        optical_link="camera_color_optical_frame",
+        calibration_link="camera_bottom_screw_frame",
+    )
     graph.add(cam)
 
     # Create solid object
-    cube = Object.make("Solid", "cube", urdf="cube_small.urdf", rate=rate)
+    cube = eagerx.Object.make("Solid", "cube", urdf="cube_small.urdf", rate=rate)
     graph.add(cube)
 
     # Create arm
-    arm = Object.make("Vx300s", "viper", sensors=["pos", "vel", "ft", "at"], actuators=["joint_control", "gripper_control"],
-                      states=["pos", "vel", "gripper"], rate=rate, control_mode=control_mode)
+    arm = eagerx.Object.make(
+        "Vx300s",
+        "viper",
+        sensors=["pos", "vel", "ft", "at"],
+        actuators=["joint_control", "gripper_control"],
+        states=["pos", "vel", "gripper"],
+        rate=rate,
+        control_mode=control_mode,
+    )
     graph.add(arm)
 
     # Connect the nodes
@@ -56,7 +66,9 @@ def test_eagerx_pybullet(control_mode, p):
     graph.connect(source=arm.sensors.at, observation="at")
 
     # Define bridges
-    bridge = Bridge.make("PybulletBridge", rate=rate, gui=False, is_reactive=True, real_time_factor=0, process=bridge_p)
+    bridge = eagerx.Bridge.make(
+        "PybulletBridge", rate=rate, gui=False, egl=False, is_reactive=True, real_time_factor=0, process=bridge_p
+    )
 
     # Define step function
     def step_fn(prev_obs, obs, action, steps):

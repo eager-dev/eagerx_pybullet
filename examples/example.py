@@ -1,28 +1,20 @@
-import os
-os.environ["PYBULLET_EGL"] = "1"
-# ^^^^ before importing eagerx_pybullet
-
-# ROS packages required
-from eagerx import Object, Bridge, initialize, log, process
-
 # Environment
 from eagerx.core.env import EagerxEnv
 from eagerx.core.graph import Graph
-
-# Implementation specific
 import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unused-import
 import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
 import examples.objects  # Registers PybulletBridge # noqa # pylint: disable=unused-import
 
+import os
 
 if __name__ == "__main__":
-    roscore = initialize("eagerx_core", anonymous=True, log_level=log.INFO)
+    roscore = eagerx.initialize("eagerx_core", anonymous=True, log_level=eagerx.log.INFO)
 
     # Initialize empty graph
     graph = Graph.create()
 
     # Create camera
-    cam = Object.make(
+    cam = eagerx.Object.make(
         "Camera",
         "cam",
         rate=10.0,
@@ -37,11 +29,11 @@ if __name__ == "__main__":
     # graph.render(source=cam.sensors.rgb, rate=10)
 
     # Create solid object
-    cube = Object.make("Solid", "cube", urdf="cube_small.urdf", rate=5.0)
+    cube = eagerx.Object.make("Solid", "cube", urdf="cube_small.urdf", rate=5.0)
     graph.add(cube)
 
     # Create arm
-    arm = Object.make(
+    arm = eagerx.Object.make(
         "Vx300s",
         "viper",
         sensors=["pos", "vel", "at"],
@@ -64,8 +56,8 @@ if __name__ == "__main__":
     graph.gui()
 
     # Define bridgesif
-    bridge = Bridge.make(
-        "PybulletBridge", rate=20.0, gui=True, is_reactive=True, real_time_factor=0, process=process.NEW_PROCESS
+    bridge = eagerx.Bridge.make(
+        "PybulletBridge", rate=20.0, gui=True, egl=True, is_reactive=True, real_time_factor=0, process=eagerx.process.NEW_PROCESS
     )
 
     # Define step function
@@ -86,7 +78,7 @@ if __name__ == "__main__":
     # Render images
     env.render("human")
 
-    # Evaluate for 30 seconds in simulation
+    # Evaluate
     for eps in range(5000):
         print(f"Episode {eps}")
         _, done = env.reset(), False

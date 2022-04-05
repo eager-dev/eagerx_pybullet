@@ -81,9 +81,9 @@ class JointState(EngineState):
         return cb
 
 
-class BaseState(EngineState):
+class LinkState(EngineState):
     @staticmethod
-    @register.spec("BaseState", EngineState)
+    @register.spec("LinkState", EngineState)
     def spec(spec: EngineStateSpec, mode: str, link: Optional[str] = None):
         """A spec to create an EngineState that resets a specified link to the desired state.
 
@@ -92,7 +92,7 @@ class BaseState(EngineState):
         :param link: The link that is to be reset. By default, the baselink is reset.
         :return: EngineStateSpec
         """
-        spec.initialize(BaseState)
+        spec.initialize(LinkState)
         spec.config.mode = mode
         spec.config.link = link
 
@@ -112,13 +112,13 @@ class BaseState(EngineState):
         self._p = self.simulator["client"]
         self.physics_client_id = self._p._client
         self.bodyUniqueId = self.robot.robot_objectid
-        self.base_cb = self._base_reset(self._p, self.mode, self.bodypart, self.bodyUniqueId[0])
+        self.base_cb = self._link_reset(self._p, self.mode, self.bodypart, self.bodyUniqueId[0])
 
     def reset(self, state, done):
         self.base_cb(state.data)
 
     @staticmethod
-    def _base_reset(p, mode, bodypart, bodyUniqueId):
+    def _link_reset(p, mode, bodypart, bodyUniqueId):
         if mode == "position":
 
             def cb(state):

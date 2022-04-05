@@ -62,7 +62,7 @@ Documentation
 
 - `EngineStates <eagerx_pybullet/enginestates.py>`_:
    - `JointState <eagerx_pybullet/enginestates.py>`_
-   - `BaseState <eagerx_pybullet/enginestates.py>`_
+   - `LinkState <eagerx_pybullet/enginestates.py>`_
    - Or implement a custom engine state (see `here <https://eagerx.readthedocs.io/en/master/guide/developer_guide/index.html>`_).
 
 Cite EAGERx
