@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.5 (2022-04-08)
+### Fix
+* Eagerx bump tot 0.1.14 ([`54d71f5`](https://github.com/eager-dev/eagerx_pybullet/commit/54d71f5125f265740396d8d1344bcaebaa2abd93))
+* Loosen flake8 constraint ([`176bf82`](https://github.com/eager-dev/eagerx_pybullet/commit/176bf8233a7000f6392fae9ea740bdbf4f373d8c))
+
 ## v0.1.4 (2022-04-05)
 ### Fix
 * Refactor baselink and add egl as argument ([`de18dad`](https://github.com/eager-dev/eagerx_pybullet/commit/de18dad214058d03d8eac3e9e7c33e203c84fd75))
