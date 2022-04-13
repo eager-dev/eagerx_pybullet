@@ -234,11 +234,8 @@ class BodyPart:
 
     def set_dynamic_property(self, property: str, value: float):
         d = {property: value}
-        self._p.changeDynamics(
-            self.bodies[self.bodyIndex],
-            self.bodyPartIndex,
-            **d
-        )
+        self._p.changeDynamics(self.bodies[self.bodyIndex], self.bodyPartIndex, **d)
+
 
 class Joint:
     def __init__(self, bullet_client, joint_name, bodies, bodyIndex, jointIndex):
