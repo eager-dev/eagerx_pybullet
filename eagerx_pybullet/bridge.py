@@ -91,9 +91,9 @@ class PybulletBridge(Bridge):
 
         # Set space converters for registered physics engine parameters.
         # todo: Default values for erp, contactERP, frictionERP? --> getPhysicsEngineParameters() does not include them...
-        spec.states.erp.space_converter = SpaceConverter.make("Space_Float32", 0.005, 0.005, dtype="float32")
-        spec.states.contactERP.space_converter = SpaceConverter.make("Space_Float32", 0.005, 0.005, dtype="float32")
-        spec.states.frictionERP.space_converter = SpaceConverter.make("Space_Float32", 0.9, 0.9, dtype="float32")
+        spec.states.erp.space_converter = SpaceConverter.make("Space_Float32", 0.2, 0.2, dtype="float32")
+        spec.states.contactERP.space_converter = SpaceConverter.make("Space_Float32", 0.2, 0.2, dtype="float32")
+        spec.states.frictionERP.space_converter = SpaceConverter.make("Space_Float32", 0.2, 0.2, dtype="float32")
 
     def initialize(self, world_fn, gui, egl, gravity, physics_engine_params: Dict = None):
         """

@@ -232,6 +232,7 @@ class JointController(EngineNode):
         vel_target: List[float] = None,
         pos_gain: List[float] = None,
         vel_gain: List[float] = None,
+        max_force: List[float] = None,
     ):
         """A spec to create a JointController node that controls a set of joints.
 
@@ -248,6 +249,8 @@ class JointController(EngineNode):
         :param vel_target: The desired velocity. Ordering according to `joints`.
         :param pos_gain: Position gain. Ordering according to `joints`.
         :param vel_gain: Velocity gain. Ordering according to `joints`.
+        :param max_force: Maximum force when mode in [`position_control`, `velocity_control`, `pd_control`]. Ordering
+                          according to `joints`.
         :return: NodeSpec
         """
         # Performs all the steps to fill-in the params with registered info about all functions.
@@ -266,8 +269,9 @@ class JointController(EngineNode):
         spec.config.vel_target = vel_target if vel_target else [0.0] * len(joints)
         spec.config.pos_gain = pos_gain if pos_gain else [0.2] * len(joints)
         spec.config.vel_gain = vel_gain if vel_gain else [0.2] * len(joints)
+        spec.config.max_force = max_force if max_force else [999.0] * len(joints)
 
-    def initialize(self, joints, mode, vel_target, pos_gain, vel_gain):
+    def initialize(self, joints, mode, vel_target, pos_gain, vel_gain, max_force):
         # We will probably use self.simulator[self.obj_name] in callback & reset.
         self.obj_name = self.config["name"]
         assert self.process == p.BRIDGE, (
@@ -280,6 +284,7 @@ class JointController(EngineNode):
         self.vel_target = vel_target
         self.pos_gain = pos_gain
         self.vel_gain = vel_gain
+        self.max_force = max_force
         self.robot = self.simulator["robots"][self.obj_name]
         self._p = self.simulator["client"]
         self.physics_client_id = self._p._client
@@ -291,7 +296,14 @@ class JointController(EngineNode):
             self.bodyUniqueId.append(bodyid), self.jointIndices.append(jointindex)
 
         self.joint_cb = self._joint_control(
-            self._p, self.mode, self.bodyUniqueId[0], self.jointIndices, self.pos_gain, self.vel_gain, self.vel_target
+            self._p,
+            self.mode,
+            self.bodyUniqueId[0],
+            self.jointIndices,
+            self.pos_gain,
+            self.vel_gain,
+            self.vel_target,
+            self.max_force,
         )
 
     @register.states()
@@ -313,7 +325,7 @@ class JointController(EngineNode):
         return dict(action_applied=action.msgs[-1])
 
     @staticmethod
-    def _joint_control(p, mode, bodyUniqueId, jointIndices, pos_gain, vel_gain, vel_target):
+    def _joint_control(p, mode, bodyUniqueId, jointIndices, pos_gain, vel_gain, vel_target, max_force):
         if mode == "position_control":
 
             def cb(action):
@@ -325,6 +337,7 @@ class JointController(EngineNode):
                     targetVelocities=vel_target,
                     positionGains=pos_gain,
                     velocityGains=vel_gain,
+                    forces=max_force,
                     physicsClientId=p._client,
                 )
 
@@ -338,6 +351,7 @@ class JointController(EngineNode):
                     targetVelocities=action,
                     positionGains=pos_gain,
                     velocityGains=vel_gain,
+                    forces=max_force,
                     physicsClientId=p._client,
                 )
 
@@ -351,6 +365,7 @@ class JointController(EngineNode):
                     targetVelocities=action,
                     positionGains=pos_gain,
                     velocityGains=vel_gain,
+                    forces=max_force,
                     physicsClientId=p._client,
                 )
 

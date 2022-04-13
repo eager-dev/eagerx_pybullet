@@ -175,3 +175,35 @@ class LinkState(EngineState):
         else:
             raise ValueError(f"Mode '{mode}' not recognized.")
         return cb
+
+
+class PbDynamics(EngineState):
+    @staticmethod
+    @register.spec("PbDynamics", EngineState)
+    def spec(spec: EngineStateSpec, property: str, links: Optional[str] = None):
+        """A spec to create an EngineState that set a specified dynamical property to the desired value.
+
+        See https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.d6og8ua34um1
+        for all options.
+
+        :param spec: Holds the desired configuration in a Spec object.
+        :param property: The dynamic property to be set. See link above for more info.
+        :param links: A list of links to set the dynamic property for. Per default, the property is set for all links.
+        :return: EngineStateSpec
+        """
+        spec.initialize(PbDynamics)
+        spec.config.property = property
+        spec.config.links = links if isinstance(links, list) else []
+
+    def initialize(self, property, links=None):
+        self.obj_name = self.config["name"]
+        self.property = property
+        self.robot = self.simulator["robots"][self.obj_name]
+        self._p = self.simulator["client"]
+        if len(links) == 0:
+            links = [pb_name for pb_name in self.robot.parts.keys()]
+        self.links = links
+
+    def reset(self, state, done):
+        for pb_name in self.links:
+            self.robot.parts[pb_name].set_dynamic_property(self.property, state.data)

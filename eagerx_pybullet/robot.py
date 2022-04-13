@@ -232,6 +232,13 @@ class BodyPart:
     def get_bodyid_linkindex(self):
         return self.bodies[self.bodyIndex], self.bodyPartIndex
 
+    def set_dynamic_property(self, property: str, value: float):
+        d = {property: value}
+        self._p.changeDynamics(
+            self.bodies[self.bodyIndex],
+            self.bodyPartIndex,
+            **d
+        )
 
 class Joint:
     def __init__(self, bullet_client, joint_name, bodies, bodyIndex, jointIndex):
