@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.6 (2022-04-13)
+### Fix
+* Codestyle ([`23e65b8`](https://github.com/eager-dev/eagerx_pybullet/commit/23e65b8c29d2645146d06f3de83ca23c4a36a3b7))
+* Add max force and dynamic property ([`105812d`](https://github.com/eager-dev/eagerx_pybullet/commit/105812db3d6b2d0b3b457d9cdc806ef2c7db7cd9))
+
 ## v0.1.5 (2022-04-08)
 ### Fix
 * Eagerx bump tot 0.1.14 ([`54d71f5`](https://github.com/eager-dev/eagerx_pybullet/commit/54d71f5125f265740396d8d1344bcaebaa2abd93))
