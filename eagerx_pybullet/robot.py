@@ -163,7 +163,6 @@ class URDFBasedRobot(XmlBasedRobot):
             self.parts, self.jdict, self.ordered_joints, self.robot_body = self.addToScene(self._p, self.robot_objectid)
 
 
-
 class BodyPart:
     def __init__(self, bullet_client, body_name, bodies, bodyIndex, bodyPartIndex):
         rospy.logdebug('bodyIndex %d | bodyPartIndex %d | name "%s"' % (bodyIndex, bodyPartIndex, body_name))
