@@ -163,6 +163,7 @@ class URDFBasedRobot(XmlBasedRobot):
             self.parts, self.jdict, self.ordered_joints, self.robot_body = self.addToScene(self._p, self.robot_objectid)
 
 
+
 class BodyPart:
     def __init__(self, bullet_client, body_name, bodies, bodyIndex, bodyPartIndex):
         rospy.logdebug('bodyIndex %d | bodyPartIndex %d | name "%s"' % (bodyIndex, bodyPartIndex, body_name))
@@ -232,8 +233,8 @@ class BodyPart:
     def get_bodyid_linkindex(self):
         return self.bodies[self.bodyIndex], self.bodyPartIndex
 
-    def set_dynamic_property(self, property: str, value: float):
-        d = {property: value}
+    def set_dynamic_parameter(self, parameter: str, value: float):
+        d = {parameter: value}
         self._p.changeDynamics(self.bodies[self.bodyIndex], self.bodyPartIndex, **d)
 
 
