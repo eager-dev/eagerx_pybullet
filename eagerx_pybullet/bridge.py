@@ -24,6 +24,8 @@ except ImportError as e:
 
 
 class PybulletBridge(Bridge):
+    """A bridge between the pybullet physics server and EAGERx engine nodes."""
+
     @staticmethod
     @register.spec("PybulletBridge", Bridge)
     def spec(

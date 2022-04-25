@@ -43,7 +43,7 @@ Examples
 ========
 For examples on how to use this package to add a pybullet implementation for your objects, please see:
 
-- `Example environment <examples/example.py>`_
+- `Example environment <examples/example.py>`_ containing the objects:
    - `Example manipulator (vx300s) <examples/objects/vx300s/objects.py>`_
    - `Example camera <examples/objects/camera/objects.py>`_
    - `Example solid <examples/objects/solid/objects.py>`_
@@ -63,6 +63,7 @@ Documentation
 - `EngineStates <eagerx_pybullet/enginestates.py>`_:
    - `JointState <eagerx_pybullet/enginestates.py>`_
    - `LinkState <eagerx_pybullet/enginestates.py>`_
+   - `PbDynamics <eagerx_pybullet/enginestates.py>`_
    - Or implement a custom engine state (see `here <https://eagerx.readthedocs.io/en/master/guide/developer_guide/index.html>`_).
 
 Cite EAGERx

@@ -22,6 +22,7 @@ class JointState(EngineState):
         spec.config.mode = mode
 
     def initialize(self, joints, mode):
+        """Initializes the engine state according to the spec."""
         self.obj_name = self.config["name"]
         flag = self.obj_name in self.simulator["robots"]
         assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation state.'
@@ -39,6 +40,7 @@ class JointState(EngineState):
         self.joint_cb = self._joint_reset(self._p, self.mode, self.bodyUniqueId[0], self.jointIndices)
 
     def reset(self, state, done):
+        """Resets the joint state to the desired value."""
         if not done:
             self.joint_cb(state.data)
 
@@ -97,6 +99,7 @@ class LinkState(EngineState):
         spec.config.link = link
 
     def initialize(self, mode, link=None):
+        """Initializes the engine state according to the spec."""
         self.obj_name = self.config["name"]
         flag = self.obj_name in self.simulator["robots"]
         assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation state.'
@@ -115,6 +118,7 @@ class LinkState(EngineState):
         self.base_cb = self._link_reset(self._p, self.mode, self.bodypart, self.bodyUniqueId[0])
 
     def reset(self, state, done):
+        """Resets the link state to the desired value."""
         self.base_cb(state.data)
 
     @staticmethod
