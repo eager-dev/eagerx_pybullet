@@ -1,10 +1,9 @@
 # Pybullet imports
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict, List
 
 # ROS IMPORTS
 import rospy
 from std_msgs.msg import UInt64, Float32
-from genpy.message import Message
 
 # RX IMPORTS
 from eagerx.core.constants import process, ERROR
@@ -238,7 +237,7 @@ class PybulletBridge(Bridge):
             self._p.setPhysicsEngineParameter(**physics_engine_params)
 
     @register.outputs(tick=UInt64)
-    def callback(self, t_n: float, **kwargs: Dict[str, Union[List[Message], float, int]]):
+    def callback(self, t_n: float):
         """Here, we step the world by 1/rate seconds."""
         self.simulator["world"].step()
 
