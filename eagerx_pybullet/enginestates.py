@@ -22,6 +22,7 @@ class JointState(EngineState):
         spec.config.mode = mode
 
     def initialize(self, joints, mode):
+        """Initializes the engine state according to the spec."""
         self.obj_name = self.config["name"]
         flag = self.obj_name in self.simulator["robots"]
         assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation state.'
@@ -39,6 +40,7 @@ class JointState(EngineState):
         self.joint_cb = self._joint_reset(self._p, self.mode, self.bodyUniqueId[0], self.jointIndices)
 
     def reset(self, state, done):
+        """Resets the joint state to the desired value."""
         if not done:
             self.joint_cb(state.data)
 
@@ -97,6 +99,7 @@ class LinkState(EngineState):
         spec.config.link = link
 
     def initialize(self, mode, link=None):
+        """Initializes the engine state according to the spec."""
         self.obj_name = self.config["name"]
         flag = self.obj_name in self.simulator["robots"]
         assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation state.'
@@ -115,6 +118,7 @@ class LinkState(EngineState):
         self.base_cb = self._link_reset(self._p, self.mode, self.bodypart, self.bodyUniqueId[0])
 
     def reset(self, state, done):
+        """Resets the link state to the desired value."""
         self.base_cb(state.data)
 
     @staticmethod
@@ -180,24 +184,25 @@ class LinkState(EngineState):
 class PbDynamics(EngineState):
     @staticmethod
     @register.spec("PbDynamics", EngineState)
-    def spec(spec: EngineStateSpec, property: str, links: Optional[str] = None):
-        """A spec to create an EngineState that set a specified dynamical property to the desired value.
+    def spec(spec: EngineStateSpec, parameter: str, links: Optional[str] = None):
+        """A spec to create an EngineState that sets a specified dynamical parameter to the desired value.
 
         See https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.d6og8ua34um1
         for all options.
 
         :param spec: Holds the desired configuration in a Spec object.
-        :param property: The dynamic property to be set. See link above for more info.
-        :param links: A list of links to set the dynamic property for. Per default, the property is set for all links.
+        :param parameter: The dynamic parameter to be set. See link above for more info.
+        :param links: A list of links to set the dynamic parameter for. Per default, the parameter is set for all links.
         :return: EngineStateSpec
         """
         spec.initialize(PbDynamics)
-        spec.config.property = property
+        spec.config.parameter = parameter
         spec.config.links = links if isinstance(links, list) else []
 
-    def initialize(self, property, links=None):
+    def initialize(self, parameter, links=None):
+        """Initializes the engine state according to the spec."""
         self.obj_name = self.config["name"]
-        self.property = property
+        self.parameter = parameter
         self.robot = self.simulator["robots"][self.obj_name]
         self._p = self.simulator["client"]
         if len(links) == 0:
@@ -205,5 +210,6 @@ class PbDynamics(EngineState):
         self.links = links
 
     def reset(self, state, done):
+        """Sets the dynamic property with the desired value."""
         for pb_name in self.links:
-            self.robot.parts[pb_name].set_dynamic_property(self.property, state.data)
+            self.robot.parts[pb_name].set_dynamic_parameter(self.parameter, state.data)

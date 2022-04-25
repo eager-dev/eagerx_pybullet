@@ -1,10 +1,9 @@
 # Pybullet imports
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict, List
 
 # ROS IMPORTS
 import rospy
 from std_msgs.msg import UInt64, Float32
-from genpy.message import Message
 
 # RX IMPORTS
 from eagerx.core.constants import process, ERROR
@@ -25,13 +24,15 @@ except ImportError as e:
 
 
 class PybulletBridge(Bridge):
+    """A bridge between the pybullet physics server and EAGERx engine nodes."""
+
     @staticmethod
     @register.spec("PybulletBridge", Bridge)
     def spec(
         spec: BridgeSpec,
         rate: float,
         process: Optional[int] = process.NEW_PROCESS,
-        is_reactive: Optional[bool] = True,
+        sync: Optional[bool] = True,
         real_time_factor: Optional[float] = 0,
         simulate_delays: Optional[bool] = True,
         log_level: Optional[int] = ERROR,
@@ -47,7 +48,7 @@ class PybulletBridge(Bridge):
         :param spec: Holds the desired configuration in a Spec object.
         :param rate: Rate of the bridge
         :param process: {0: NEW_PROCESS, 1: ENVIRONMENT, 2: BRIDGE, 3: EXTERNAL}
-        :param is_reactive: Run reactive or async
+        :param sync: Run reactive or async
         :param real_time_factor: Simulation speed. 0 == "as fast as possible".
         :param simulate_delays: Boolean flag to simulate delays.
         :param log_level: {0: SILENT, 10: DEBUG, 20: INFO, 30: WARN, 40: ERROR, 50: FATAL}
@@ -75,7 +76,7 @@ class PybulletBridge(Bridge):
         # Modify default bridge params
         spec.config.rate = rate
         spec.config.process = process
-        spec.config.is_reactive = is_reactive
+        spec.config.sync = sync
         spec.config.real_time_factor = real_time_factor
         spec.config.simulate_delays = simulate_delays
         spec.config.log_level = log_level
@@ -238,7 +239,7 @@ class PybulletBridge(Bridge):
             self._p.setPhysicsEngineParameter(**physics_engine_params)
 
     @register.outputs(tick=UInt64)
-    def callback(self, t_n: float, **kwargs: Dict[str, Union[List[Message], float, int]]):
+    def callback(self, t_n: float):
         """Here, we step the world by 1/rate seconds."""
         self.simulator["world"].step()
 

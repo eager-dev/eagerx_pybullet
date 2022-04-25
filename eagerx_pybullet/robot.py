@@ -232,8 +232,8 @@ class BodyPart:
     def get_bodyid_linkindex(self):
         return self.bodies[self.bodyIndex], self.bodyPartIndex
 
-    def set_dynamic_property(self, property: str, value: float):
-        d = {property: value}
+    def set_dynamic_parameter(self, parameter: str, value: float):
+        d = {parameter: value}
         self._p.changeDynamics(self.bodies[self.bodyIndex], self.bodyPartIndex, **d)
 
 

@@ -52,6 +52,7 @@ class LinkSensor(EngineNode):
         spec.config.mode = mode
 
     def initialize(self, links, mode):
+        """Initializes the link sensor node according to the spec."""
         self.obj_name = self.config["name"]
         assert self.process == p.BRIDGE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Bridge process"
@@ -73,11 +74,17 @@ class LinkSensor(EngineNode):
 
     @register.states()
     def reset(self):
+        """This link sensor is stateless, so nothing happens here."""
         pass
 
     @register.inputs(tick=UInt64)
     @register.outputs(obs=Float32MultiArray)
     def callback(self, t_n: float, tick: Optional[Msg] = None):
+        """Produces a link sensor measurement called `obs`.
+
+        The measurement is published at the specified rate * real_time_factor.
+
+        Input `tick` ensures that this node is I/O synchronized with the simulator."""
         obs = self.link_cb()
         return dict(obs=Float32MultiArray(data=obs))
 
@@ -161,6 +168,7 @@ class JointSensor(EngineNode):
         spec.config.mode = mode
 
     def initialize(self, joints, mode):
+        """Initializes the joint sensor node according to the spec."""
         self.obj_name = self.config["name"]
         assert self.process == p.BRIDGE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Bridge process"
@@ -186,11 +194,17 @@ class JointSensor(EngineNode):
 
     @register.states()
     def reset(self):
+        """This joint sensor is stateless, so nothing happens here."""
         pass
 
     @register.inputs(tick=UInt64)
     @register.outputs(obs=Float32MultiArray)
     def callback(self, t_n: float, tick: Optional[Msg] = None):
+        """Produces a joint sensor measurement called `obs`.
+
+        The measurement is published at the specified rate * real_time_factor.
+
+        Input `tick` ensures that this node is I/O synchronized with the simulator."""
         obs = self.joint_cb()
         return dict(obs=Float32MultiArray(data=obs))
 
@@ -272,6 +286,7 @@ class JointController(EngineNode):
         spec.config.max_force = max_force if max_force else [999.0] * len(joints)
 
     def initialize(self, joints, mode, vel_target, pos_gain, vel_gain, max_force):
+        """Initializes the joint controller node according to the spec."""
         # We will probably use self.simulator[self.obj_name] in callback & reset.
         self.obj_name = self.config["name"]
         assert self.process == p.BRIDGE, (
@@ -308,8 +323,8 @@ class JointController(EngineNode):
 
     @register.states()
     def reset(self):
+        """This joint controller is stateless, so nothing happens here."""
         pass
-        # self.simulator[self.obj_name]["input"] = np.squeeze(np.array(self.default_action))
 
     @register.inputs(tick=UInt64, action=Float32MultiArray)
     @register.outputs(action_applied=Float32MultiArray)
@@ -319,6 +334,14 @@ class JointController(EngineNode):
         tick: Optional[Msg] = None,
         action: Optional[Msg] = None,
     ):
+        """Sets the most recently received `action` in the pybullet joint controller.
+
+        The action is set at the specified rate * real_time_factor.
+
+        The output `action_applied` is the action that was set. If the input `action` comes in at a higher rate than
+        this node's rate, `action_applied` may be differnt as only the most recently received `action` is set.
+
+        Input `tick` ensures that this node is I/O synchronized with the simulator."""
         # Set action in pybullet
         self.joint_cb(action.msgs[-1].data)
         # Send action that has been applied.
@@ -473,6 +496,7 @@ class CameraSensor(EngineNode):
         flags=pybullet.ER_NO_SEGMENTATION_MASK,
         renderer=pybullet.ER_BULLET_HARDWARE_OPENGL,
     ):
+        """Initializes the camera sensor according to the spec."""
         if self.simulator:
             self._p = self.simulator["client"]
         else:
@@ -497,6 +521,11 @@ class CameraSensor(EngineNode):
 
     @register.states(pos=Float32MultiArray, orientation=Float32MultiArray)
     def reset(self, pos=None, orientation=None):
+        """The static position and orientation of the camera sensor can be reset at the start of a new episode.
+
+        If 'position' and 'orientation' were selected as inputs in the spec, nothing happens here because the camera pose
+        changes over time according to the connected inputs.
+        """
         self.cb_args["projectionMatrix"] = pybullet.computeProjectionMatrixFOV(**self.intrinsic)
 
         if pos is not None and orientation is not None:
@@ -509,6 +538,14 @@ class CameraSensor(EngineNode):
     @register.inputs(tick=UInt64, pos=Float32MultiArray, orientation=Float32MultiArray)
     @register.outputs(image=Image)
     def callback(self, t_n: float, tick: Msg = None, pos: Msg = None, orientation: Msg = None):
+        """Produces a camera sensor measurement called `image`.
+
+        If 'position' and 'orientation' were selected as inputs in the spec, the pose of the camera is recalculated before
+        rendering the image. Hence, this sensor is able to render images from the perspective of e.g. and end-effector.
+
+        The image measurement is published at the specified rate * real_time_factor.
+
+        Input `tick` ensures that this node is I/O synchronized with the simulator."""
         if pos:
             self.pos = pos.msgs[-1].data
         if orientation:

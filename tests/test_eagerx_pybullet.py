@@ -67,7 +67,7 @@ def test_eagerx_pybullet(control_mode, p):
 
     # Define bridges
     bridge = eagerx.Bridge.make(
-        "PybulletBridge", rate=rate, gui=False, egl=False, is_reactive=True, real_time_factor=0, process=bridge_p
+        "PybulletBridge", rate=rate, gui=False, egl=False, sync=True, real_time_factor=0, process=bridge_p
     )
 
     # Define step function

@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # Define bridgesif
     bridge = eagerx.Bridge.make(
-        "PybulletBridge", rate=20.0, gui=True, egl=True, is_reactive=True, real_time_factor=0, process=eagerx.process.NEW_PROCESS
+        "PybulletBridge", rate=20.0, gui=True, egl=True, sync=True, real_time_factor=0, process=eagerx.process.NEW_PROCESS
     )
 
     # Define step function
