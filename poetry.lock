@@ -187,7 +187,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "eagerx"
-version = "0.1.17"
+version = "0.1.20"
 description = "Engine Angostic Gym Environments for Robotics"
 category = "main"
 optional = false
@@ -201,6 +201,7 @@ networkx = ">=2.5.1,<3.0.0"
 opencv-python = ">=4.3.0.36,<5.0.0.0"
 psutil = ">=5.9.0,<6.0.0"
 pyglet = ">=1.5.21,<2.0.0"
+PyVirtualDisplay = ">=3.0,<4.0"
 PyYAML = ">=6.0,<7.0"
 rospkg = ">=1.3.0,<2.0.0"
 Rx = ">=3.2.0,<4.0.0"
@@ -647,6 +648,14 @@ six = ">=1.5"
 name = "pytz"
 version = "2022.1"
 description = "World timezone definitions, modern and historical"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "pyvirtualdisplay"
+version = "3.0"
+description = "python wrapper for Xvfb, Xephyr and Xvnc"
 category = "main"
 optional = false
 python-versions = "*"
@@ -1119,8 +1128,8 @@ docutils = [
     {file = "docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125"},
 ]
 eagerx = [
-    {file = "eagerx-0.1.17-py3-none-any.whl", hash = "sha256:10614b4fecdb5d06cea9fdcc2007dd9a77ff06f7b820d2e5f6d38c76e6dc3507"},
-    {file = "eagerx-0.1.17.tar.gz", hash = "sha256:38d9eaaf0079948ce1ed09f8628c1b3947c23f2926d8f7616c40f42e1364b5d9"},
+    {file = "eagerx-0.1.20-py3-none-any.whl", hash = "sha256:c9e7869005edd9cca274530a8393de17f73c7cc7fb3064fbf8e5067708d24356"},
+    {file = "eagerx-0.1.20.tar.gz", hash = "sha256:af93a2cc7e329bd65b1a6823276e3653c562d87ddf6c58c86db602e9f7fabb7b"},
 ]
 flake8 = [
     {file = "flake8-3.9.2-py2.py3-none-any.whl", hash = "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"},
@@ -1501,13 +1510,6 @@ py = [
     {file = "py-1.11.0.tar.gz", hash = "sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719"},
 ]
 pybullet = [
-    {file = "pybullet-3.2.3-cp27-cp27m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:2a52b63b5b61fda62a04c35ee6a5e8d5cd17c773704ba440848070037b2bfbe9"},
-    {file = "pybullet-3.2.3-cp27-cp27mu-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:404f8f5e88402ad19acf8505791a414a92000bd23ffc95ec68dfca4d8470bd6e"},
-    {file = "pybullet-3.2.3-cp35-cp35m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:db6456f72019e307d0a594d1158ab2ab7a0ec969e6c1f3cb831a076ea6e6a633"},
-    {file = "pybullet-3.2.3-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:dbf4fea02769f32916f2c0831e8b9f2ae54d27750eaef7ef1f72490ca0de9d1e"},
-    {file = "pybullet-3.2.3-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:9e483e4c442fc811d00f75f6dd26bc04191745549015974d0bd01b0b914f812f"},
-    {file = "pybullet-3.2.3-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:0a5eaff301992d912a016deb3a2f2335aff00903a4379bef1e7a8d9b9290e5fc"},
-    {file = "pybullet-3.2.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:a3d7544eb3c2652ee123e17884b16af7b63bd562a46f36418c11b098e346e696"},
     {file = "pybullet-3.2.3.tar.gz", hash = "sha256:ca0a41f40e513bf5d6ef6b7c894d690098530face0bfbe434c035ab71172c466"},
 ]
 pycodestyle = [
@@ -1549,6 +1551,10 @@ python-dateutil = [
 pytz = [
     {file = "pytz-2022.1-py2.py3-none-any.whl", hash = "sha256:e68985985296d9a66a881eb3193b0906246245294a881e7c8afe623866ac6a5c"},
     {file = "pytz-2022.1.tar.gz", hash = "sha256:1e760e2fe6a8163bc0b3d9a19c4f84342afa0a2affebfaa84b01b978a02ecaa7"},
+]
+pyvirtualdisplay = [
+    {file = "PyVirtualDisplay-3.0-py3-none-any.whl", hash = "sha256:40d4b8dfe4b8de8552e28eb367647f311f88a130bf837fe910e7f180d5477f0e"},
+    {file = "PyVirtualDisplay-3.0.tar.gz", hash = "sha256:09755bc3ceb6eb725fb07eca5425f43f2358d3bf08e00d2a9b792a1aedd16159"},
 ]
 pywavelets = [
     {file = "PyWavelets-1.1.1-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:35959c041ec014648575085a97b498eafbbaa824f86f6e4a59bfdef8a3fe6308"},
