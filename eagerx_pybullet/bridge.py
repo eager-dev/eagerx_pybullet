@@ -70,9 +70,6 @@ class PybulletBridge(Bridge):
 
         :return: BridgeSpec
         """
-        # Performs all the steps to fill-in the params with registered info about all functions.
-        spec.initialize(PybulletBridge)
-
         # Modify default bridge params
         spec.config.rate = rate
         spec.config.process = process
@@ -155,6 +152,9 @@ class PybulletBridge(Bridge):
         pybullet.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=p._client)
         return p, physics_client_id
 
+    def pre_reset(self, *args, **kwargs):
+        pass
+
     @register.bridge_config(
         urdf=None,
         basePosition=[0, 0, 0],
@@ -221,9 +221,6 @@ class PybulletBridge(Bridge):
             )
         else:  # if no urdf is provided, create dummy robot.
             self.simulator["robots"][obj_name] = None
-
-    def pre_reset(self, *args, **kwargs):
-        pass
 
     @register.states(erp=Float32, contactERP=Float32, frictionERP=Float32)
     def reset(self, erp: Float32 = None, contactERP: Float32 = None, frictionERP: Float32 = None):

@@ -37,9 +37,6 @@ class LinkSensor(EngineNode):
         :param mode: Available: `position`, `orientation`, `velocity`, and `angular_vel`
         :return: NodeSpec
         """
-        # Performs all the steps to fill-in the params with registered info about all functions.
-        spec.initialize(LinkSensor)
-
         # Modify default node params
         spec.config.name = name
         spec.config.rate = rate
@@ -153,9 +150,6 @@ class JointSensor(EngineNode):
         :param mode: Available: `position`, `velocity`, `force_torque`, and `applied_torque`.
         :return: NodeSpec
         """
-        # Performs all the steps to fill-in the params with registered info about all functions.
-        spec.initialize(JointSensor)
-
         # Modify default node params
         spec.config.name = name
         spec.config.rate = rate
@@ -267,9 +261,6 @@ class JointController(EngineNode):
                           according to `joints`.
         :return: NodeSpec
         """
-        # Performs all the steps to fill-in the params with registered info about all functions.
-        spec.initialize(JointController)
-
         # Modify default node params
         spec.config.name = name
         spec.config.rate = rate
@@ -446,9 +437,6 @@ class CameraSensor(EngineNode):
         :param far_val: Far plane distance.
         :return: NodeSpec
         """
-        # Performs all the steps to fill-in the params with registered info about all functions.
-        spec.initialize(CameraSensor)
-
         # Modify default node params
         spec.config.name = name
         spec.config.rate = rate

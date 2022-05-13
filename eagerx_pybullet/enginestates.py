@@ -17,7 +17,6 @@ class JointState(EngineState):
         :param mode: Available: `position`, `velocity`.
         :return: EngineStateSpec
         """
-        spec.initialize(JointState)
         spec.config.joints = joints
         spec.config.mode = mode
 
@@ -94,7 +93,6 @@ class LinkState(EngineState):
         :param link: The link that is to be reset. By default, the baselink is reset.
         :return: EngineStateSpec
         """
-        spec.initialize(LinkState)
         spec.config.mode = mode
         spec.config.link = link
 
@@ -195,7 +193,6 @@ class PbDynamics(EngineState):
         :param links: A list of links to set the dynamic parameter for. Per default, the parameter is set for all links.
         :return: EngineStateSpec
         """
-        spec.initialize(PbDynamics)
         spec.config.parameter = parameter
         spec.config.links = links if isinstance(links, list) else []
 

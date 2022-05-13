@@ -16,8 +16,6 @@ class MirrorAction(Processor):
     @staticmethod
     @register.spec("MirrorAction", Processor)
     def spec(spec: ConverterSpec, index=0, offset=0):
-        # Initialize spec with default arguments
-        spec.initialize(MirrorAction)
         params = dict(offset=offset, index=index)
         spec.config.update(params)
 
