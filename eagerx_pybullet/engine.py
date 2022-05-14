@@ -8,8 +8,8 @@ from std_msgs.msg import UInt64, Float32
 # RX IMPORTS
 from eagerx.core.constants import process, ERROR
 import eagerx.core.register as register
-from eagerx.core.entities import Bridge, SpaceConverter
-from eagerx.core.specs import BridgeSpec
+from eagerx.core.entities import Engine, SpaceConverter
+from eagerx.core.specs import EngineSpec
 from eagerx_pybullet.world import World
 from eagerx_pybullet.robot import URDFBasedRobot
 
@@ -23,13 +23,13 @@ except ImportError as e:
     raise error.DependencyNotInstalled("{}. (HINT: you need to install PyBullet)".format(e))
 
 
-class PybulletBridge(Bridge):
-    """A bridge between the pybullet physics server and EAGERx engine nodes."""
+class PybulletEngine(Engine):
+    """A engine between the pybullet physics server and EAGERx engine nodes."""
 
     @staticmethod
-    @register.spec("PybulletBridge", Bridge)
+    @register.spec("PybulletEngine", Engine)
     def spec(
-        spec: BridgeSpec,
+        spec: EngineSpec,
         rate: float,
         process: Optional[int] = process.NEW_PROCESS,
         sync: Optional[bool] = True,
@@ -43,11 +43,11 @@ class PybulletBridge(Bridge):
         gravity: float = -9.81,
         physics_engine_params: Optional[Dict] = None,
     ):
-        """A spec to create a PybulletBridge node that interfaces with a pybullet physics server.
+        """A spec to create a PybulletEngine node that interfaces with a pybullet physics server.
 
         :param spec: Holds the desired configuration in a Spec object.
-        :param rate: Rate of the bridge
-        :param process: {0: NEW_PROCESS, 1: ENVIRONMENT, 2: BRIDGE, 3: EXTERNAL}
+        :param rate: Rate of the engine
+        :param process: {0: NEW_PROCESS, 1: ENVIRONMENT, 2: ENGINE, 3: EXTERNAL}
         :param sync: Run reactive or async
         :param real_time_factor: Simulation speed. 0 == "as fast as possible".
         :param simulate_delays: Boolean flag to simulate delays.
@@ -65,12 +65,12 @@ class PybulletBridge(Bridge):
                                       https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.k37c0drzdf21
 
                                       .. note:: fixedTimeStep cannot be set, as it is determined by the specified rate of
-                                                the bridge. Per default, numSubSteps is set such that simulation steps are
+                                                the engine. Per default, numSubSteps is set such that simulation steps are
                                                 taken at 240 hz. Tune numSubSteps to trade performance over accuracy.
 
-        :return: BridgeSpec
+        :return: EngineSpec
         """
-        # Modify default bridge params
+        # Modify default engine params
         spec.config.rate = rate
         spec.config.process = process
         spec.config.sync = sync
@@ -95,7 +95,7 @@ class PybulletBridge(Bridge):
 
     def initialize(self, world_fn, gui, egl, gravity, physics_engine_params: Dict = None):
         """
-        Initializes the bridge to pybullet.
+        Initializes the engine to pybullet.
 
         :param world_fn: A string with syntax `module/WorldFnName` that received `bullet_client` as an argument. The
                          function builds-up the (static) world (i.e. loads urdfs into pybullet). See
@@ -120,7 +120,7 @@ class PybulletBridge(Bridge):
         if physics_engine_params:
             assert "fixedTimeStep" not in physics_engine_params, (
                 "Cannot set the fixedTimeStep via the physics_engine_params. "
-                f"This is determined by the bridge's rate: dt = 1/{self.rate} s."
+                f"This is determined by the engine's rate: dt = 1/{self.rate} s."
             )
             self._p.setPhysicsEngineParameter(**physics_engine_params)
         # Create pybullet simulator that will be shared with all EngineStates & EngineNodes (if launched in same process).
@@ -155,7 +155,7 @@ class PybulletBridge(Bridge):
     def pre_reset(self, *args, **kwargs):
         pass
 
-    @register.bridge_config(
+    @register.engine_config(
         urdf=None,
         basePosition=[0, 0, 0],
         baseOrientation=[0, 0, 0, 0],
@@ -164,12 +164,12 @@ class PybulletBridge(Bridge):
         globalScaling=1.0,
         flags=0,
     )
-    def add_object(self, config, bridge_config, node_params, state_params):
+    def add_object(self, config, engine_config, node_params, state_params):
         """
         Adds an object to the connected Pybullet physics server.
 
         :param config: The (agnostic) config of the :class:`~eagerx.core.entities.Object` that is to be added.
-        :param bridge_config: The bridge-specific config of the :class:`~eagerx.core.entities.Object` that is to be added.
+        :param engine_config: The engine-specific config of the :class:`~eagerx.core.entities.Object` that is to be added.
                               This dict contains the registered parameters:
 
                               See https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#
@@ -203,20 +203,20 @@ class PybulletBridge(Bridge):
         rospy.loginfo(f'Adding object "{obj_name}" of type "{entity_id}" to the simulator.')
 
         # Add self collision to flag
-        if bridge_config["self_collision"]:
-            flags = bridge_config["flags"] | pybullet.URDF_USE_SELF_COLLISION
+        if engine_config["self_collision"]:
+            flags = engine_config["flags"] | pybullet.URDF_USE_SELF_COLLISION
         else:
-            flags = bridge_config["flags"]
+            flags = engine_config["flags"]
 
         # Add object
-        if bridge_config["urdf"]:
+        if engine_config["urdf"]:
             self.simulator["robots"][obj_name] = URDFBasedRobot(
                 self._p,
-                model_urdf=bridge_config["urdf"],  # Can be path (ending with .urdf), or ros param key to urdf (xml)string.
+                model_urdf=engine_config["urdf"],  # Can be path (ending with .urdf), or ros param key to urdf (xml)string.
                 robot_name=obj_name,
-                basePosition=bridge_config["basePosition"],
-                baseOrientation=bridge_config["baseOrientation"],
-                fixed_base=bridge_config["fixed_base"],
+                basePosition=engine_config["basePosition"],
+                baseOrientation=engine_config["baseOrientation"],
+                fixed_base=engine_config["fixed_base"],
                 flags=flags,
             )
         else:  # if no urdf is provided, create dummy robot.
@@ -241,5 +241,5 @@ class PybulletBridge(Bridge):
         self.simulator["world"].step()
 
     def shutdown(self) -> None:
-        """Disconnects the bridge from the pybullet physics server"""
+        """Disconnects the engine from the pybullet physics server"""
         self._p.disconnect()

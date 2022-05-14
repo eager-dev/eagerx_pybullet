@@ -2,8 +2,8 @@
 from eagerx.core.env import EagerxEnv
 from eagerx.core.graph import Graph
 import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unused-import
-import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
-import examples.objects  # Registers PybulletBridge # noqa # pylint: disable=unused-import
+import eagerx_pybullet  # Registers PybulletEngine # noqa # pylint: disable=unused-import
+import examples.objects  # Registers PybulletEngine # noqa # pylint: disable=unused-import
 
 # OTHER
 import os
@@ -22,7 +22,7 @@ def test_eagerx_pybullet(control_mode, p):
 
     # Define unique name for test environment
     name = f"{control_mode}_{p}"
-    bridge_p = p
+    engine_p = p
     rate = 30
 
     # Initialize empty graph
@@ -65,9 +65,9 @@ def test_eagerx_pybullet(control_mode, p):
     graph.connect(source=arm.sensors.ft, observation="ft")
     graph.connect(source=arm.sensors.at, observation="at")
 
-    # Define bridges
-    bridge = eagerx.Bridge.make(
-        "PybulletBridge", rate=rate, gui=False, egl=False, sync=True, real_time_factor=0, process=bridge_p
+    # Define engines
+    engine = eagerx.Engine.make(
+        "PybulletEngine", rate=rate, gui=False, egl=False, sync=True, real_time_factor=0, process=engine_p
     )
 
     # Define step function
@@ -81,7 +81,7 @@ def test_eagerx_pybullet(control_mode, p):
         return obs, rwd, done, info
 
     # Initialize Environment
-    env = EagerxEnv(name=name, rate=rate, graph=graph, bridge=bridge, step_fn=step_fn)
+    env = EagerxEnv(name=name, rate=rate, graph=graph, engine=engine, step_fn=step_fn)
 
     # Evaluate for 30 seconds in simulation
     _, action = env.reset(), env.action_space.sample()

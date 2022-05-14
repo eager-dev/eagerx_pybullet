@@ -2,8 +2,8 @@
 from eagerx.core.env import EagerxEnv
 from eagerx.core.graph import Graph
 import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unused-import
-import eagerx_pybullet  # Registers PybulletBridge # noqa # pylint: disable=unused-import
-import examples.objects  # Registers PybulletBridge # noqa # pylint: disable=unused-import
+import eagerx_pybullet  # Registers PybulletEngine # noqa # pylint: disable=unused-import
+import examples.objects  # Registers PybulletEngine # noqa # pylint: disable=unused-import
 
 import os
 
@@ -55,9 +55,9 @@ if __name__ == "__main__":
     # Show in the gui
     graph.gui()
 
-    # Define bridgesif
-    bridge = eagerx.Bridge.make(
-        "PybulletBridge", rate=20.0, gui=True, egl=True, sync=True, real_time_factor=0, process=eagerx.process.NEW_PROCESS
+    # Define enginesif
+    engine = eagerx.Engine.make(
+        "PybulletEngine", rate=20.0, gui=True, egl=True, sync=True, real_time_factor=0, process=eagerx.process.NEW_PROCESS
     )
 
     # Define step function
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         return obs, rwd, done, info
 
     # Initialize Environment
-    env = EagerxEnv(name="rx", rate=5.0, graph=graph, bridge=bridge, step_fn=step_fn, exclude=["at"])
+    env = EagerxEnv(name="rx", rate=5.0, graph=graph, engine=engine, step_fn=step_fn, exclude=["at"])
 
     obs_space = env.observation_space
 
