@@ -19,7 +19,7 @@ eagerx_pybullet package
 
 What is the *eagerx_pybullet* package?
 =================================
-This repository/package contains the *PybulletBridge* for simulating robots with EAGERx in pybullet.
+This repository/package contains the *PybulletEngine* for simulating robots with EAGERx in pybullet.
 EAGERx (Engine Agnostic Gym Environments for Robotics) enables users to easily define new tasks, switch from one sensor to another, and switch from simulation to reality with a single line of code by being invariant to the physics engine.
 
 `The core repository is available here <https://github.com/eager-dev/eagerx>`_.
@@ -51,7 +51,7 @@ For examples on how to use this package to add a pybullet implementation for you
 Documentation
 =============
 
-- `PybulletBridge <eagerx_pybullet/bridge.py>`_
+- `PybulletEngine <eagerx_pybullet/engine.py>`_
 
 - `EngineNodes <eagerx_pybullet/enginenodes.py>`_:
    - `LinkSensors <eagerx_pybullet/enginenodes.py>`_

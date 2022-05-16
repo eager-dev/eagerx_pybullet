@@ -4,7 +4,7 @@ from typing import Optional, List
 from std_msgs.msg import Float32MultiArray
 
 # EAGERx IMPORTS
-from eagerx_pybullet.bridge import PybulletBridge
+from eagerx_pybullet.engine import PybulletEngine
 from eagerx import Object, EngineNode, SpaceConverter, EngineState, Processor
 from eagerx.core.specs import ObjectSpec
 from eagerx.core.graph_engine import EngineGraph
@@ -137,9 +137,6 @@ class Vx300s(Object):
         :param control_mode: Control mode for the arm joints. Available: `position_control`, `velocity_control`, `pd_control`, and `torque_control`.
         :return: ObjectSpec
         """
-        # Performs all the steps to fill-in the params with registered info about all functions.
-        Vx300s.initialize_spec(spec)
-
         # Modify default agnostic params
         # Only allow changes to the agnostic params (rates, windows, (space)converters, etc...
         spec.config.name = name
@@ -160,27 +157,27 @@ class Vx300s(Object):
         Vx300s.agnostic(spec, rate)
 
     @staticmethod
-    @register.bridge(
-        entity_id, PybulletBridge
-    )  # This decorator pre-initializes bridge implementation with default object_params
-    def pybullet_bridge(spec: ObjectSpec, graph: EngineGraph):
+    @register.engine(
+        entity_id, PybulletEngine
+    )  # This decorator pre-initializes engine implementation with default object_params
+    def pybullet_engine(spec: ObjectSpec, graph: EngineGraph):
         """Engine-specific implementation (Pybullet) of the object."""
-        # Import any object specific entities for this bridge
+        # Import any object specific entities for this engine
         import examples.objects  # noqa # pylint: disable=unused-import
         import eagerx_pybullet  # noqa # pylint: disable=unused-import
 
-        # Set object arguments (as registered per register.bridge_params(..) above the bridge.add_object(...) method.
+        # Set object arguments (as registered per register.engine_params(..) above the engine.add_object(...) method.
         path = os.path.dirname(examples.objects.__file__) + "/vx300s/descriptions/urdf/vx300s.urdf"
-        spec.PybulletBridge.urdf = path
-        spec.PybulletBridge.basePosition = spec.config.base_pos
-        spec.PybulletBridge.baseOrientation = spec.config.base_or
-        spec.PybulletBridge.fixed_base = spec.config.fixed_base
-        spec.PybulletBridge.self_collision = spec.config.self_collision
+        spec.PybulletEngine.urdf = path
+        spec.PybulletEngine.basePosition = spec.config.base_pos
+        spec.PybulletEngine.baseOrientation = spec.config.base_or
+        spec.PybulletEngine.fixed_base = spec.config.fixed_base
+        spec.PybulletEngine.self_collision = spec.config.self_collision
 
         # Create engine_states (no agnostic states defined in this case)
-        spec.PybulletBridge.states.pos = EngineState.make("JointState", joints=spec.config.joint_names, mode="position")
-        spec.PybulletBridge.states.vel = EngineState.make("JointState", joints=spec.config.joint_names, mode="velocity")
-        spec.PybulletBridge.states.gripper = EngineState.make("JointState", joints=spec.config.gripper_names, mode="position")
+        spec.PybulletEngine.states.pos = EngineState.make("JointState", joints=spec.config.joint_names, mode="position")
+        spec.PybulletEngine.states.vel = EngineState.make("JointState", joints=spec.config.joint_names, mode="velocity")
+        spec.PybulletEngine.states.gripper = EngineState.make("JointState", joints=spec.config.gripper_names, mode="position")
 
         # Create sensor engine nodes
         # Rate=None, but we will connect them to sensors (thus will use the rate set in the agnostic specification)
