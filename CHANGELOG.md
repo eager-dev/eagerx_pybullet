@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.8 (2022-05-16)
+### Fix
+* Update dependencies ([`ed2ba80`](https://github.com/eager-dev/eagerx_pybullet/commit/ed2ba80b2f6f0972109728bb66fa20cb8d2d2957))
+* Refactor bridge to engine ([`a923803`](https://github.com/eager-dev/eagerx_pybullet/commit/a92380376b4ef2a51475b4bbd1c80acef72391ad))
+* Refactor initialize_spec ([`32a55df`](https://github.com/eager-dev/eagerx_pybullet/commit/32a55dffc81a1279aded60cdd9ca14d1f5e5410e))
+
+### Documentation
+* Update bibtex typo ([`dec0dfb`](https://github.com/eager-dev/eagerx_pybullet/commit/dec0dfb4c76e6c4ce60a6816453e1690b87d98b7))
+
 ## v0.1.7 (2022-04-25)
 ### Fix
 * Bump eagerx to 0.1.17 and blacken code ([`976cfa4`](https://github.com/eager-dev/eagerx_pybullet/commit/976cfa4625948d1b9505da295b25a8377c1309cb))
