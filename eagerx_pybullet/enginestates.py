@@ -1,47 +1,45 @@
-from typing import List, Optional
-from eagerx.core.entities import EngineState
-import eagerx.core.register as register
+from typing import List, Optional, Dict
+from eagerx.core.entities import EngineState, ObjectSpec
 from eagerx.core.specs import EngineStateSpec
 import numpy as np
 from scipy.spatial.transform import Rotation
 
 
 class JointState(EngineState):
-    @staticmethod
-    @register.spec("JointState", EngineState)
-    def spec(spec: EngineStateSpec, joints: List[str], mode: str):
+    @classmethod
+    def make(cls, joints: List[str], mode: str) -> EngineStateSpec:
         """A spec to create an EngineState that resets a set of specified joints to the desired state.
 
-        :param spec: Holds the desired configuration in a Spec object.
         :param joints: List of joints to be reset. Its order determines the ordering of the reset.
         :param mode: Available: `position`, `velocity`.
         :return: EngineStateSpec
         """
+        spec = cls.get_specification()
         spec.config.joints = joints
         spec.config.mode = mode
+        return spec
 
-    def initialize(self, joints, mode):
+    def initialize(self, spec: EngineStateSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the engine state according to the spec."""
-        self.obj_name = self.config["name"]
-        flag = self.obj_name in self.simulator["robots"]
-        assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation state.'
-        self.joints = joints
-        self.mode = mode
-        self.robot = self.simulator["robots"][self.obj_name]
-        self._p = self.simulator["client"]
+        self.obj_name = object_spec.config.name
+        flag = self.obj_name in simulator["robots"]
+        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation state.'
+        self.joints = spec.config.joints
+        self.mode = spec.config.mode
+        self.robot = simulator["robots"][self.obj_name]
+        self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
         self.bodyUniqueId = []
         self.jointIndices = []
-        for _idx, pb_name in enumerate(joints):
+        for _idx, pb_name in enumerate(spec.config.joints):
             bodyid, jointindex = self.robot.jdict[pb_name].get_bodyid_jointindex()
             self.bodyUniqueId.append(bodyid), self.jointIndices.append(jointindex)
         self.joint_cb = self._joint_reset(self._p, self.mode, self.bodyUniqueId[0], self.jointIndices)
 
-    def reset(self, state, done):
+    def reset(self, state):
         """Resets the joint state to the desired value."""
-        if not done:
-            self.joint_cb(state.data)
+        self.joint_cb(state)
 
     @staticmethod
     def _joint_reset(p, mode, bodyUniqueId, jointIndices):
@@ -83,41 +81,41 @@ class JointState(EngineState):
 
 
 class LinkState(EngineState):
-    @staticmethod
-    @register.spec("LinkState", EngineState)
-    def spec(spec: EngineStateSpec, mode: str, link: Optional[str] = None):
+    @classmethod
+    def make(cls, mode: str, link: Optional[str] = None) -> EngineStateSpec:
         """A spec to create an EngineState that resets a specified link to the desired state.
 
-        :param spec: Holds the desired configuration in a Spec object.
         :param mode: Available: `position`, `orientation`, 'velocity', and 'angular_vel`.
         :param link: The link that is to be reset. By default, the baselink is reset.
         :return: EngineStateSpec
         """
+        spec = cls.get_specification()
         spec.config.mode = mode
         spec.config.link = link
+        return spec
 
-    def initialize(self, mode, link=None):
+    def initialize(self, spec: EngineStateSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the engine state according to the spec."""
-        self.obj_name = self.config["name"]
-        flag = self.obj_name in self.simulator["robots"]
-        assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation state.'
-        self.mode = mode
-        self.robot = self.simulator["robots"][self.obj_name]
-        if link is None:
+        self.obj_name = object_spec.config.name
+        flag = self.obj_name in simulator["robots"]
+        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation state.'
+        self.mode = spec.config.mode
+        self.robot = simulator["robots"][self.obj_name]
+        if spec.config.link is None:
             for _pb_name, part in self.robot.parts.items():
                 bodyid, linkindex = part.get_bodyid_linkindex()
                 if linkindex == -1:
                     self.bodypart = part
         else:
-            self.bodypart = self.robot.parts[link]
-        self._p = self.simulator["client"]
+            self.bodypart = self.robot.parts[spec.config.link]
+        self._p = simulator["client"]
         self.physics_client_id = self._p._client
         self.bodyUniqueId = self.robot.robot_objectid
         self.base_cb = self._link_reset(self._p, self.mode, self.bodypart, self.bodyUniqueId[0])
 
-    def reset(self, state, done):
+    def reset(self, state):
         """Resets the link state to the desired value."""
-        self.base_cb(state.data)
+        self.base_cb(state)
 
     @staticmethod
     def _link_reset(p, mode, bodypart, bodyUniqueId):
@@ -180,33 +178,33 @@ class LinkState(EngineState):
 
 
 class PbDynamics(EngineState):
-    @staticmethod
-    @register.spec("PbDynamics", EngineState)
-    def spec(spec: EngineStateSpec, parameter: str, links: Optional[str] = None):
+    @classmethod
+    def make(cls, parameter: str, links: Optional[str] = None) -> EngineStateSpec:
         """A spec to create an EngineState that sets a specified dynamical parameter to the desired value.
 
         See https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.d6og8ua34um1
         for all options.
 
-        :param spec: Holds the desired configuration in a Spec object.
         :param parameter: The dynamic parameter to be set. See link above for more info.
         :param links: A list of links to set the dynamic parameter for. Per default, the parameter is set for all links.
         :return: EngineStateSpec
         """
+        spec = cls.get_specification()
         spec.config.parameter = parameter
         spec.config.links = links if isinstance(links, list) else []
+        return spec
 
-    def initialize(self, parameter, links=None):
+    def initialize(self, spec: EngineStateSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the engine state according to the spec."""
-        self.obj_name = self.config["name"]
-        self.parameter = parameter
-        self.robot = self.simulator["robots"][self.obj_name]
-        self._p = self.simulator["client"]
-        if len(links) == 0:
-            links = [pb_name for pb_name in self.robot.parts.keys()]
-        self.links = links
+        self.obj_name = object_spec.config.name
+        self.parameter = spec.config.parameter
+        self.robot = simulator["robots"][self.obj_name]
+        self._p = simulator["client"]
+        self.links = spec.config.links
+        if len(self.links) == 0:
+            self.links = [pb_name for pb_name in self.robot.parts.keys()]
 
-    def reset(self, state, done):
+    def reset(self, state):
         """Sets the dynamic property with the desired value."""
         for pb_name in self.links:
-            self.robot.parts[pb_name].set_dynamic_parameter(self.parameter, state.data)
+            self.robot.parts[pb_name].set_dynamic_parameter(self.parameter, state)

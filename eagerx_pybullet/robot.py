@@ -216,8 +216,11 @@ class BodyPart:
     #     self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], position, orientation)
 
     def reset_velocity(self, linearVelocity=None, angularVelocity=None):
-        linearVelocity = linearVelocity if linearVelocity else [0, 0, 0]
-        angularVelocity = angularVelocity if angularVelocity else [0, 0, 0]
+        try:
+            linearVelocity = linearVelocity if linearVelocity is not None else [0, 0, 0]
+            angularVelocity = angularVelocity if angularVelocity is not None else [0, 0, 0]
+        except ValueError:
+            print("wait")
         self._p.resetBaseVelocity(self.bodies[self.bodyIndex], linearVelocity, angularVelocity)
 
     def reset_pose(self, position, orientation):

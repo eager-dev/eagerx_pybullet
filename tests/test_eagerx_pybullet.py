@@ -1,9 +1,4 @@
-# Environment
-from eagerx.core.env import EagerxEnv
-from eagerx.core.graph import Graph
-import eagerx.nodes  # Registers butterworth_filter # noqa # pylint: disable=unused-import
-import eagerx_pybullet  # Registers PybulletEngine # noqa # pylint: disable=unused-import
-import examples.objects  # Registers PybulletEngine # noqa # pylint: disable=unused-import
+import eagerx
 
 # OTHER
 import os
@@ -17,8 +12,7 @@ ENV = eagerx.process.ENVIRONMENT
 @pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
-    # Start roscore
-    roscore = eagerx.initialize("eagerx_core", anonymous=True, log_level=eagerx.log.WARN)
+    eagerx.set_log_level(eagerx.WARN)
 
     # Define unique name for test environment
     name = f"{control_mode}_{p}"
@@ -26,12 +20,13 @@ def test_eagerx_pybullet(control_mode, p):
     rate = 30
 
     # Initialize empty graph
-    graph = Graph.create()
+    graph = eagerx.Graph.create()
 
     # Create camera
-    urdf = os.path.dirname(examples.objects.__file__) + "/camera/assets/realsense2_d435.urdf"
-    cam = eagerx.Object.make(
-        "Camera",
+    from example.objects.camera.objects import Camera
+    import example.objects
+    urdf = os.path.dirname(example.objects.__file__) + "/camera/assets/realsense2_d435.urdf"
+    cam = Camera.make(
         "cam",
         rate=rate,
         sensors=["rgb", "rgba", "rgbd"],
@@ -42,12 +37,13 @@ def test_eagerx_pybullet(control_mode, p):
     graph.add(cam)
 
     # Create solid object
-    cube = eagerx.Object.make("Solid", "cube", urdf="cube_small.urdf", rate=rate)
+    from example.objects.solid.objects import Solid
+    cube = Solid.make("cube", urdf="cube_small.urdf", rate=rate)
     graph.add(cube)
 
     # Create arm
-    arm = eagerx.Object.make(
-        "Vx300s",
+    from example.objects.vx300s.objects import Vx300s
+    arm = Vx300s.make(
         "viper",
         sensors=["pos", "vel", "ft", "at"],
         actuators=["joint_control", "gripper_control"],
@@ -66,22 +62,43 @@ def test_eagerx_pybullet(control_mode, p):
     graph.connect(source=arm.sensors.at, observation="at")
 
     # Define engines
-    engine = eagerx.Engine.make(
-        "PybulletEngine", rate=rate, gui=False, egl=False, sync=True, real_time_factor=0, process=engine_p
+    from eagerx_pybullet.engine import PybulletEngine
+    engine = PybulletEngine.make(
+        rate=rate, gui=False, egl=False, sync=True, real_time_factor=0, process=engine_p
     )
 
-    # Define step function
-    def step_fn(prev_obs, obs, action, steps):
-        # Calculate reward
-        rwd = 0
-        # Determine done flag
-        done = steps > 500
-        # Set info:
-        info = dict()
-        return obs, rwd, done, info
+    # Make backend
+    # from eagerx.backends.ros1 import Ros1
+    # backend = Ros1.make()
+    from eagerx.backends.single_process import SingleProcess
+    backend = SingleProcess.make()
+
+    # Define environment
+    class TestEnv(eagerx.BaseEnv):
+        def __init__(self, name, rate, graph, engine, backend, force_start):
+            self.steps = 0
+            super().__init__(name, rate, graph, engine, backend=backend, force_start=force_start)
+
+        def step(self, action):
+            obs = self._step(action)
+            # Determine when is the episode over
+            self.steps += 1
+            done = self.steps > 500
+            return obs, 0, done, {}
+
+        def reset(self):
+            # Reset steps counter
+            self.steps = 0
+
+            # Sample states
+            states = self.state_space.sample()
+
+            # Perform reset
+            obs = self._reset(states)
+            return obs
 
     # Initialize Environment
-    env = EagerxEnv(name=name, rate=rate, graph=graph, engine=engine, step_fn=step_fn)
+    env = TestEnv(name=name, rate=rate, graph=graph, engine=engine, backend=backend, force_start=True)
 
     # Evaluate for 30 seconds in simulation
     _, action = env.reset(), env.action_space.sample()
@@ -91,7 +108,9 @@ def test_eagerx_pybullet(control_mode, p):
             _, action = env.reset(), env.action_space.sample()
             print(f"Episode {i}")
     print("\n[Finished]")
-    env.shutdown()
-    if roscore:
-        roscore.shutdown()
-    print("\n[Shutdown]")
+
+
+if __name__ == "__main__":
+    for p in [ENV, NP]:
+        for control_mode in ["position_control", "pd_control", "torque_control", "velocity_control"]:
+            test_eagerx_pybullet(control_mode, p)

@@ -1,1 +1,0 @@
-import examples.objects.solid.objects  # noqa # pylint: disable=unused-import
