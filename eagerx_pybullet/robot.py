@@ -1,6 +1,6 @@
 from eagerx.utils.utils import get_param_with_blocking
+import uuid
 import numpy as np
-import rospy
 import os
 
 try:
@@ -138,14 +138,13 @@ class URDFBasedRobot(XmlBasedRobot):
             self.doneLoading = 1
             if self.model_urdf.endswith(".urdf"):  # Full path specified
                 fullpath = self.model_urdf
-            else:  # Retrieve on ROS paramserver with key, write to /tmp file
-                urdf_txt = get_param_with_blocking(self.model_urdf)
-                fullpath = f"/tmp/{self.model_urdf.replace('/', '_')}.urdf"
+            else:  # Write to /tmp file
+                fullpath = f"/tmp/{uuid.uuid4().hex}.urdf"
                 with open(fullpath, "w") as file:
-                    file.write(urdf_txt)
+                    file.write(self.model_urdf)
             if fullpath.startswith("/") and not os.path.exists(fullpath):
                 raise IOError("File %s does not exist" % fullpath)
-            print(fullpath)
+            # print(fullpath)
 
             if self.self_collision:
                 flags = self.flags | pybullet.URDF_USE_SELF_COLLISION
@@ -165,7 +164,7 @@ class URDFBasedRobot(XmlBasedRobot):
 
 class BodyPart:
     def __init__(self, bullet_client, body_name, bodies, bodyIndex, bodyPartIndex):
-        rospy.logdebug('bodyIndex %d | bodyPartIndex %d | name "%s"' % (bodyIndex, bodyPartIndex, body_name))
+        # rospy.logdebug('bodyIndex %d | bodyPartIndex %d | name "%s"' % (bodyIndex, bodyPartIndex, body_name))
         self.bodies = bodies
         self._p = bullet_client
         self.bodyIndex = bodyIndex
@@ -216,11 +215,8 @@ class BodyPart:
     #     self._p.resetBasePositionAndOrientation(self.bodies[self.bodyIndex], position, orientation)
 
     def reset_velocity(self, linearVelocity=None, angularVelocity=None):
-        try:
-            linearVelocity = linearVelocity if linearVelocity is not None else [0, 0, 0]
-            angularVelocity = angularVelocity if angularVelocity is not None else [0, 0, 0]
-        except ValueError:
-            print("wait")
+        linearVelocity = linearVelocity if linearVelocity is not None else [0, 0, 0]
+        angularVelocity = angularVelocity if angularVelocity is not None else [0, 0, 0]
         self._p.resetBaseVelocity(self.bodies[self.bodyIndex], linearVelocity, angularVelocity)
 
     def reset_pose(self, position, orientation):
@@ -242,7 +238,7 @@ class BodyPart:
 
 class Joint:
     def __init__(self, bullet_client, joint_name, bodies, bodyIndex, jointIndex):
-        rospy.logdebug('bodyIndex %d | jointIndex %d | name "%s"' % (bodyIndex, jointIndex, joint_name))
+        # rospy.logdebug('bodyIndex %d | jointIndex %d | name "%s"' % (bodyIndex, jointIndex, joint_name))
         self.bodies = bodies
         self._p = bullet_client
         self.bodyIndex = bodyIndex

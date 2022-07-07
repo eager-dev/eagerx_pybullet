@@ -192,7 +192,7 @@ class PybulletEngine(Engine):
         if urdf:
             from eagerx_pybullet.robot import URDFBasedRobot
             self.simulator["robots"][obj_name] = URDFBasedRobot(
-                self._p,
+                bullet_client=self._p,
                 model_urdf=urdf,  # Can be path (ending with .urdf), or ros param key to urdf (xml)string.
                 robot_name=obj_name,
                 basePosition=basePosition,
