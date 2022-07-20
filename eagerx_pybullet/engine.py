@@ -95,6 +95,7 @@ class PybulletEngine(Engine):
         self._p, self.physics_client_id = self._start_simulator(spec.config.gui, spec.config.egl)
         # Initialzize
         from eagerx_pybullet.world import World
+
         world = World(
             self._p,
             gravity=spec.config.gravity,
@@ -144,15 +145,17 @@ class PybulletEngine(Engine):
     def pre_reset(self, *args, **kwargs):
         pass
 
-    def add_object(self,
-                   spec,
-                   urdf: str,
-                   basePosition: List = [0, 0, 0],
-                   baseOrientation: List = [0, 0, 0, 0],
-                   fixed_base: bool = True,
-                   self_collision: bool = False,
-                   globalScaling: float = 1.0,
-                   flags: int = 0):
+    def add_object(
+        self,
+        spec,
+        urdf: str,
+        basePosition: List = [0, 0, 0],
+        baseOrientation: List = [0, 0, 0, 0],
+        fixed_base: bool = True,
+        self_collision: bool = False,
+        globalScaling: float = 1.0,
+        flags: int = 0,
+    ):
         """
         Adds an object to the connected Pybullet physics server.
 
@@ -176,6 +179,7 @@ class PybulletEngine(Engine):
 
         # Add self collision to flag
         import pybullet
+
         if self_collision:
             flags = flags | pybullet.URDF_USE_SELF_COLLISION
         else:
@@ -184,6 +188,7 @@ class PybulletEngine(Engine):
         # Add object
         if urdf:
             from eagerx_pybullet.robot import URDFBasedRobot
+
             self.simulator["robots"][obj_name] = URDFBasedRobot(
                 bullet_client=self._p,
                 model_urdf=urdf,  # Can be path (ending with .urdf), or ros param key to urdf (xml)string.
@@ -196,12 +201,12 @@ class PybulletEngine(Engine):
         else:  # if no urdf is provided, create dummy robot.
             self.simulator["robots"][obj_name] = None
 
-    @register.states(erp=eagerx.Space(low=0.2, high=0.2, shape=()),
-                     contactERP=eagerx.Space(low=0.2, high=0.2, shape=()),
-                     frictionERP=eagerx.Space(low=0.2, high=0.2, shape=()))
-    def reset(self, erp: np.float = None,
-              contactERP: np.float = None,
-              frictionERP: np.float = None):
+    @register.states(
+        erp=eagerx.Space(low=0.2, high=0.2, shape=()),
+        contactERP=eagerx.Space(low=0.2, high=0.2, shape=()),
+        frictionERP=eagerx.Space(low=0.2, high=0.2, shape=()),
+    )
+    def reset(self, erp: np.float = None, contactERP: np.float = None, frictionERP: np.float = None):
         """Set any of the physics engine parameters (registered as states) if they were selected."""
         physics_engine_params = {}
         if erp:

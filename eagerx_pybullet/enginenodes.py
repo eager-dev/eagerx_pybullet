@@ -476,10 +476,9 @@ class CameraSensor(EngineNode):
         # print("[rgb]: ", self._p._client)
         self.mode = spec.config.mode
         self.height, self.width = spec.config.render_shape
-        self.intrinsic = dict(fov=spec.config.fov,
-                              nearVal=spec.config.near_val,
-                              farVal=spec.config.far_val,
-                              aspect=self.height / self.width)
+        self.intrinsic = dict(
+            fov=spec.config.fov, nearVal=spec.config.near_val, farVal=spec.config.far_val, aspect=self.height / self.width
+        )
         self.cb_args = dict(
             width=self.width,
             height=self.height,
