@@ -1,7 +1,6 @@
 import numpy as np
-from gym.spaces import Box
 from eagerx_pybullet.engine import PybulletEngine
-from eagerx import Object
+from eagerx import Object, Space
 from eagerx.core.specs import ObjectSpec
 from eagerx.core.graph_engine import EngineGraph
 import eagerx.core.register as register
@@ -55,12 +54,12 @@ class Solid(Object):
 
         # Position
         spec.sensors.pos.rate = rate
-        spec.sensors.pos.space = Box(
+        spec.sensors.pos.space = Space(
             dtype="float32",
             low=np.array([-999, -999, -999], dtype="float32"),
             high=np.array([999, 999, 999], dtype="float32"),
         )
-        spec.states.pos.space = Box(
+        spec.states.pos.space = Space(
             dtype="float32",
             low=np.array([-1, -1, 0], dtype="float32"),
             high=np.array([1, 1, 0], dtype="float32"),
@@ -68,12 +67,12 @@ class Solid(Object):
 
         # Velocity
         spec.sensors.vel.rate = rate
-        spec.sensors.vel.space = Box(
+        spec.sensors.vel.space = Space(
             dtype="float32",
             low=np.array([-10, -10, -10], dtype="float32"),
             high=np.array([10, 10, 10], dtype="float32"),
         )
-        spec.states.vel.space = Box(
+        spec.states.vel.space = Space(
             dtype="float32",
             low=np.array([0, 0, 0], dtype="float32"),
             high=np.array([0, 0, 0], dtype="float32"),
@@ -81,12 +80,12 @@ class Solid(Object):
 
         # Orientation
         spec.sensors.orientation.rate = rate
-        spec.sensors.orientation.space = Box(
+        spec.sensors.orientation.space = Space(
             dtype="float32",
             low=np.array([-1, -1, -1, -1], dtype="float32"),
             high=np.array([1, 1, 1, 1], dtype="float32"),
         )
-        spec.states.orientation.space = Box(
+        spec.states.orientation.space = Space(
             dtype="float32",
             low=np.array([0, 0, -1, -1], dtype="float32"),
             high=np.array([0, 0, 1, 1], dtype="float32"),
@@ -94,12 +93,12 @@ class Solid(Object):
 
         # Angular velocity
         spec.sensors.angular_vel.rate = rate
-        spec.sensors.angular_vel.space = Box(
+        spec.sensors.angular_vel.space = Space(
             dtype="float32",
             low=np.array([-10, -10, -10], dtype="float32"),
             high=np.array([10, 10, 10], dtype="float32"),
         )
-        spec.states.angular_vel.space = Box(
+        spec.states.angular_vel.space = Space(
             dtype="float32",
             low=np.array([0, 0, 0], dtype="float32"),
             high=np.array([0, 0, 0], dtype="float32"),

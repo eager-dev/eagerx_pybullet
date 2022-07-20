@@ -1,5 +1,4 @@
 from typing import Optional, Dict, List
-from gym.spaces import Box
 import numpy as np
 
 # RX IMPORTS
@@ -82,12 +81,6 @@ class PybulletEngine(Engine):
         spec.config.egl = egl
         spec.config.gravity = gravity
         spec.config.physics_engine_params = physics_engine_params if isinstance(physics_engine_params, dict) else None
-
-        # Set space converters for registered physics engine parameters.
-        # todo: Default values for erp, contactERP, frictionERP? --> getPhysicsEngineParameters() does not include them...
-        spec.states.erp.space = Box(low=0.2, high=0.2, shape=(), dtype="float32")
-        spec.states.contactERP.space = Box(low=0.2, high=0.2, shape=(), dtype="float32")
-        spec.states.frictionERP.space = Box(low=0.2, high=0.2, shape=(), dtype="float32")
         return spec
 
     def initialize(self, spec):
@@ -203,9 +196,9 @@ class PybulletEngine(Engine):
         else:  # if no urdf is provided, create dummy robot.
             self.simulator["robots"][obj_name] = None
 
-    @register.states(erp=Box(low=0.2, high=0.2, shape=(), dtype="float32"),
-                     contactERP=Box(low=0.2, high=0.2, shape=(), dtype="float32"),
-                     frictionERP=Box(low=0.2, high=0.2, shape=(), dtype="float32"))
+    @register.states(erp=eagerx.Space(low=0.2, high=0.2, shape=()),
+                     contactERP=eagerx.Space(low=0.2, high=0.2, shape=()),
+                     frictionERP=eagerx.Space(low=0.2, high=0.2, shape=()))
     def reset(self, erp: np.float = None,
               contactERP: np.float = None,
               frictionERP: np.float = None):

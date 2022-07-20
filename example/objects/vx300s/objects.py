@@ -1,11 +1,10 @@
-from gym.spaces import Box
 import numpy as np
 from typing import Optional, List
 import os
 
 # EAGERx IMPORTS
 from eagerx_pybullet.engine import PybulletEngine
-from eagerx import Object
+from eagerx import Object, Space
 from eagerx.core.specs import ObjectSpec
 from eagerx.core.graph_engine import EngineGraph
 import eagerx.core.register as register
@@ -63,25 +62,25 @@ class Vx300s(Object):
 
         # Set observation properties: (space_converters, rate, etc...)
         spec.sensors.pos.rate = rate
-        spec.sensors.pos.space = Box(
+        spec.sensors.pos.space = Space(
             dtype="float32",
             low=np.array([-3.14159, -3.14159, -3.14159, -3.14159, -3.14159, -3.14159], dtype="float32"),
             high=np.array([3.14159, 3.14159, 3.14159, 3.14159, 3.14159, 3.14159], dtype="float32"),
         )
         spec.sensors.vel.rate = rate
-        spec.sensors.vel.space = Box(
+        spec.sensors.vel.space = Space(
             dtype="float32",
             low=np.array([-3.14159, -3.14159, -3.14159, -3.14159, -3.14159, -3.14159], dtype="float32"),
             high=np.array([3.14159, 3.14159, 3.14159, 3.14159, 3.14159, 3.14159], dtype="float32"),
         )
         spec.sensors.ft.rate = rate
-        spec.sensors.ft.space = Box(
+        spec.sensors.ft.space = Space(
             dtype="float32",
             low=np.array(6*6*[-3.14159], dtype="float32"),   # 6 joints, each producing (Fx, Fy, Fz, Mx, My, Mz) measurements.
-            high=np.array(6*6*[-3.14159], dtype="float32"),  # 6 joints, each producing (Fx, Fy, Fz, Mx, My, Mz) measurements.
+            high=np.array(6*6*[3.14159], dtype="float32"),  # 6 joints, each producing (Fx, Fy, Fz, Mx, My, Mz) measurements.
         )
         spec.sensors.at.rate = rate
-        spec.sensors.at.space = Box(
+        spec.sensors.at.space = Space(
             dtype="float32",
             low=np.array([-3.14159, -3.14159, -3.14159, -3.14159, -3.14159, -3.14159], dtype="float32"),
             high=np.array([3.14159, 3.14159, 3.14159, 3.14159, 3.14159, 3.14159], dtype="float32"),
@@ -90,31 +89,31 @@ class Vx300s(Object):
         # Set actuator properties: (space_converters, rate, etc...)
         spec.actuators.joint_control.rate = rate
         spec.actuators.gripper_control.rate = rate
-        spec.actuators.joint_control.space = Box(
+        spec.actuators.joint_control.space = Space(
             dtype="float32",
             low=np.array([-3.14159, -3.14159, -3.14159, -3.14159, -3.14159, -3.14159], dtype="float32"),
             high=np.array([3.14159, 3.14159, 3.14159, 3.14159, 3.14159, 3.14159], dtype="float32"),
         )
         from example.objects.vx300s.processors import MirrorAction
         spec.actuators.gripper_control.processor = MirrorAction.make(index=0, offset=0)
-        spec.actuators.gripper_control.space = Box(
+        spec.actuators.gripper_control.space = Space(
             dtype="float32",
             low=np.array([0.021, -0.057], dtype="float32"),
             high=np.array([0.057, -0.021], dtype="float32"),
         )
 
         # Set model_state properties: (space_converters)
-        spec.states.pos.space = Box(
+        spec.states.pos.space = Space(
             dtype="float32",
             low=np.array([-3.14158, -1.85004, -1.76278, -3.14158, -1.86750, -3.14158], dtype="float32"),
             high=np.array([3.14158, 1.25663, 1.605702, 3.14158, 2.23402, 3.14158], dtype="float32"),
         )
-        spec.states.vel.space = Box(
+        spec.states.vel.space = Space(
             dtype="float32",
             low=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype="float32"),
             high=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype="float32"),
         )
-        spec.states.gripper.space = Box(
+        spec.states.gripper.space = Space(
             dtype="float32",
             low=np.array([0.021, -0.057], dtype="float32"),
             high=np.array([0.057, -0.021], dtype="float32"),

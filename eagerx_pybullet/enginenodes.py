@@ -1,10 +1,10 @@
 from typing import Optional, List, Dict
 from scipy.spatial.transform import Rotation
-from gym.spaces import Box, Discrete
 import numpy as np
 import pybullet
 
 # IMPORT EAGERX
+from eagerx import Space
 from eagerx.core.specs import NodeSpec, ObjectSpec
 from eagerx.core.constants import process as p
 from eagerx.utils.utils import Msg
@@ -73,8 +73,8 @@ class LinkSensor(EngineNode):
         """This link sensor is stateless, so nothing happens here."""
         pass
 
-    @register.inputs(tick=Discrete(9999))
-    @register.outputs(obs=None)
+    @register.inputs(tick=Space(shape=(), dtype="int64"))
+    @register.outputs(obs=Space(dtype="float32"))
     def callback(self, t_n: float, tick: Optional[Msg] = None):
         """Produces a link sensor measurement called `obs`.
 
@@ -189,8 +189,8 @@ class JointSensor(EngineNode):
         """This joint sensor is stateless, so nothing happens here."""
         pass
 
-    @register.inputs(tick=Discrete(9999))
-    @register.outputs(obs=None)
+    @register.inputs(tick=Space(shape=(), dtype="int64"))
+    @register.outputs(obs=Space(dtype="float32"))
     def callback(self, t_n: float, tick: Optional[Msg] = None):
         """Produces a joint sensor measurement called `obs`.
 
@@ -314,8 +314,8 @@ class JointController(EngineNode):
         """This joint controller is stateless, so nothing happens here."""
         pass
 
-    @register.inputs(tick=Discrete(99999), action=None)
-    @register.outputs(action_applied=None)
+    @register.inputs(tick=Space(shape=(), dtype="int64"), action=Space(dtype="float32"))
+    @register.outputs(action_applied=Space(dtype="float32"))
     def callback(
         self,
         t_n: float,
@@ -453,22 +453,15 @@ class CameraSensor(EngineNode):
         spec.config.render_shape = render_shape if isinstance(render_shape, list) else [480, 680]
 
         # Position
-        spec.states.pos.space = Box(
-            dtype="float32",
-            low=np.array([-1, -1, 0], dtype="float32"),
-            high=np.array([1, 1, 0], dtype="float32"),
-        )
+        spec.states.pos.space = Space(low=[-5, -5, 0], high=[5, 5, 5])
 
         # Orientation
-        spec.states.orientation.space = Box(
-            dtype="float32",
-            low=np.array([0, 0, -1, -1], dtype="float32"),
-            high=np.array([0, 0, 1, 1], dtype="float32"),
-        )
+        spec.states.orientation.space = Space(low=[-1, -1, -1, -1], high=[1, 1, 1, 1])
 
         # Image
-        shape = (spec.config.render_shape[0], spec.config.render_shape[1], 3)
-        spec.outputs.image.space = Box(low=0, high=255, shape=shape, dtype="uint8")
+        channels = 3 if mode == "rgb" else 4
+        shape = (spec.config.render_shape[0], spec.config.render_shape[1], channels)
+        spec.outputs.image.space = Space(low=0, high=255, shape=shape, dtype="uint8")
         return spec
 
     def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
@@ -498,7 +491,7 @@ class CameraSensor(EngineNode):
         )
         self.cam_cb = self._camera_measurement(self._p, self.mode, self.cb_args)
 
-    @register.states(pos=None, orientation=None)
+    @register.states(pos=Space(dtype="float32"), orientation=Space(dtype="float32"))
     def reset(self, pos=None, orientation=None):
         """The static position and orientation of the camera sensor can be reset at the start of a new episode.
 
@@ -514,8 +507,8 @@ class CameraSensor(EngineNode):
         if orientation is not None:
             self.orientation = orientation
 
-    @register.inputs(tick=Discrete(9999), pos=None, orientation=None)
-    @register.outputs(image=None)
+    @register.inputs(tick=Space(shape=(), dtype="int64"), pos=Space(dtype="float32"), orientation=Space(dtype="float32"))
+    @register.outputs(image=Space(dtype="uint8"))
     def callback(self, t_n: float, tick: Msg = None, pos: Msg = None, orientation: Msg = None):
         """Produces a camera sensor measurement called `image`.
 

@@ -1,8 +1,7 @@
-from gym.spaces import Box
 import numpy as np
 
 from eagerx_pybullet.engine import PybulletEngine
-from eagerx import Object
+from eagerx import Object, Space
 from eagerx.core.specs import ObjectSpec
 from eagerx.core.graph_engine import EngineGraph
 import eagerx.core.register as register
@@ -70,33 +69,17 @@ class Camera(Object):
 
         # Position
         spec.sensors.pos.rate = rate
-        spec.sensors.pos.space = Box(
-            dtype="float32",
-            low=np.array([-999, -999, -999], dtype="float32"),
-            high=np.array([999, 999, 999], dtype="float32"),
-        )
-        spec.states.pos.space = Box(
-            dtype="float32",
-            low=np.array([0.83, 0.0181, 0.75], dtype="float32"),
-            high=np.array([0.83, 0.0181, 0.75], dtype="float32"),
-        )
+        spec.sensors.pos.space = Space(low=[-999, -999, -999], high=[999, 999, 999])
+        spec.states.pos.space = Space(low=[0.83, 0.0181, 0.75], high=[0.83, 0.0181, 0.75])
 
         # Orientation
         spec.sensors.orientation.rate = rate
-        spec.sensors.orientation.space = Box(
-            dtype="float32",
-            low=np.array([-1, -1, -1, -1], dtype="float32"),
-            high=np.array([1, 1, 1, 1], dtype="float32"),
-        )
-        spec.states.orientation.space = Box(
-            dtype="float32",
-            low=np.array([0.377, -0.04, -0.92, 0.088], dtype="float32"),
-            high=np.array([0.377, -0.04, -0.92, 0.088], dtype="float32"),
-        )
+        spec.sensors.orientation.space = Space(low=[-1, -1, -1, -1], high=[1, 1, 1, 1])
+        spec.states.orientation.space = Space(low=[0.377, -0.04, -0.92, 0.088], high=[0.377, -0.04, -0.92, 0.088])
 
         # Rgb
         spec.sensors.rgb.rate = rate
-        spec.sensors.rgb.space = Box(
+        spec.sensors.rgb.space = Space(
             dtype="uint8",
             low=0,
             high=255,
@@ -105,7 +88,7 @@ class Camera(Object):
 
         # Rgba
         spec.sensors.rgba.rate = rate
-        spec.sensors.rgba.space = Box(
+        spec.sensors.rgba.space = Space(
             dtype="uint8",
             low=0,
             high=255,
@@ -114,7 +97,7 @@ class Camera(Object):
 
         # Rgbd
         spec.sensors.rgbd.rate = rate
-        spec.sensors.rgbd.space = Box(
+        spec.sensors.rgbd.space = Space(
             dtype="uint8",
             low=0,
             high=255,
