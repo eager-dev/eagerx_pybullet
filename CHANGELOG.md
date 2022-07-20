@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.9 (2022-07-20)
+### Fix
+* Codestyle ([`414fb1e`](https://github.com/eager-dev/eagerx_pybullet/commit/414fb1e5c60ce9e7d1aa013a5e7ad996fea17161))
+* Refactor to Space ([`d04f5a1`](https://github.com/eager-dev/eagerx_pybullet/commit/d04f5a1a72e3cdf232a8b9875b77325280626457))
+* Load urdf with urdf string ([`0a6fed3`](https://github.com/eager-dev/eagerx_pybullet/commit/0a6fed37378e8cb3614065d0c0219375554c7c9d))
+* Rename to load,  and don't use old util function. ([`30c995e`](https://github.com/eager-dev/eagerx_pybullet/commit/30c995ee13e0450c537509d731e903ed80ee779c))
+* Refactor to numpy messages, backend, spec API ([`184c0e0`](https://github.com/eager-dev/eagerx_pybullet/commit/184c0e0fce64bf6c98ffca1a98b11282505c9d37))
+
 ## v0.1.8 (2022-05-16)
 ### Fix
 * Update dependencies ([`ed2ba80`](https://github.com/eager-dev/eagerx_pybullet/commit/ed2ba80b2f6f0972109728bb66fa20cb8d2d2957))
