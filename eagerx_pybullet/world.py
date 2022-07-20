@@ -1,5 +1,5 @@
 import math as m
-from eagerx.utils.utils import get_attribute_from_module, get_module_type_string
+from eagerx.utils.utils import load
 
 
 def empty_world_with_plane(bullet_client):
@@ -19,12 +19,13 @@ class World:
         self.timestep = timestep
         self.clean_everything()
         msg = "We only support world creation functions defined as a string of the form "
-        f"'module/WorldFunctionName'. For example, '{get_module_type_string(empty_world_with_plane)}'."
+        module_type_string = f"{empty_world_with_plane.__module__}/{empty_world_with_plane.__qualname__}"
+        f"'module/WorldFunctionName'. For example, '{module_type_string}'."
         if world_fn is None:
             empty_world_with_plane(bullet_client)
         elif isinstance(world_fn, str):
             try:
-                get_attribute_from_module(world_fn)(bullet_client)
+                load(world_fn)(bullet_client)
             except ModuleNotFoundError:
                 raise ModuleNotFoundError(msg)
         else:

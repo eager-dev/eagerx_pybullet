@@ -20,7 +20,7 @@ eagerx_pybullet package
 What is the *eagerx_pybullet* package?
 =================================
 This repository/package contains the *PybulletEngine* for simulating robots with EAGERx in pybullet.
-EAGERx (Engine Agnostic Gym Environments for Robotics) enables users to easily define new tasks, switch from one sensor to another, and switch from simulation to reality with a single line of code by being invariant to the physics engine.
+EAGERx (Engine Agnostic Graph Environments for Robotics) enables users to easily define new tasks, switch from one sensor to another, and switch from simulation to reality with a single line of code by being invariant to the physics engine.
 
 `The core repository is available here <https://github.com/eager-dev/eagerx>`_.
 
@@ -35,18 +35,14 @@ You can install the package using pip:
 
     pip3 install eagerx-pybullet
 
-.. note::
-    EAGERx depends on a minimal ROS installation. Fortunately, you **can** use eagerx anywhere as you would any python package,
-    so it does **not** impose a ROS package structure on your project.
-
 Examples
 ========
 For examples on how to use this package to add a pybullet implementation for your objects, please see:
 
-- `Example environment <examples/example.py>`_ containing the objects:
-   - `Example manipulator (vx300s) <examples/objects/vx300s/objects.py>`_
-   - `Example camera <examples/objects/camera/objects.py>`_
-   - `Example solid <examples/objects/solid/objects.py>`_
+- `Example environment <example/example.py>`_ containing the objects:
+   - `Example manipulator (vx300s) <example/objects/vx300s/objects.py>`_
+   - `Example camera <example/objects/camera/objects.py>`_
+   - `Example solid <example/objects/solid/objects.py>`_
 
 Documentation
 =============
@@ -74,7 +70,7 @@ If you are using EAGERx for your scientific publications, please cite:
 
     @article{eagerx,
         author  = {van der Heijden, Bas and Luijkx, Jelle, and Ferranti, Laura and Kober, Jens and Babuska, Robert},
-        title = {EAGERx: Engine Agnostic Gym Environment for Robotics},
+        title = {EAGERx: Engine Agnostic Graph Environments for Robotics},
         year = {2022},
         publisher = {GitHub},
         journal = {GitHub repository},

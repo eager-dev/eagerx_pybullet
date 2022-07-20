@@ -1,24 +1,21 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from scipy.spatial.transform import Rotation
+import numpy as np
 import pybullet
 
-# IMPORT ROS
-from std_msgs.msg import UInt64, Float32MultiArray
-from sensor_msgs.msg import Image
-
 # IMPORT EAGERX
-from eagerx.core.specs import NodeSpec
+from eagerx import Space
+from eagerx.core.specs import NodeSpec, ObjectSpec
 from eagerx.core.constants import process as p
 from eagerx.utils.utils import Msg
-from eagerx.core.entities import EngineNode, SpaceConverter
+from eagerx.core.entities import EngineNode
 import eagerx.core.register as register
 
 
 class LinkSensor(EngineNode):
-    @staticmethod
-    @register.spec("LinkSensor", EngineNode)
-    def spec(
-        spec: NodeSpec,
+    @classmethod
+    def make(
+        cls,
         name: str,
         rate: float,
         links: List[str] = None,
@@ -28,7 +25,6 @@ class LinkSensor(EngineNode):
     ):
         """A spec to create a LinkSensor node that provides sensor measurements for the specified set of links.
 
-        :param spec: Holds the desired configuration.
         :param name: User specified node name.
         :param rate: Rate (Hz) at which the callback is called.
         :param links: List of links to be included in the measurements. Its order determines the ordering of the measurements.
@@ -37,26 +33,29 @@ class LinkSensor(EngineNode):
         :param mode: Available: `position`, `orientation`, `velocity`, and `angular_vel`
         :return: NodeSpec
         """
+        spec = cls.get_specification()
+
         # Modify default node params
-        spec.config.name = name
-        spec.config.rate = rate
-        spec.config.process = process
+        spec.config.update(name=name, rate=rate, process=process, color=color)
         spec.config.inputs = ["tick"]
         spec.config.outputs = ["obs"]
 
         # Set parameters, defined by the signature of cls.initialize(...)
         spec.config.links = links if isinstance(links, list) else []
         spec.config.mode = mode
+        return spec
 
-    def initialize(self, links, mode):
+    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the link sensor node according to the spec."""
-        self.obj_name = self.config["name"]
+        links = spec.config.links
+
+        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in self.simulator["robots"]
-        assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation node.'
-        self.robot = self.simulator["robots"][self.obj_name]
+        flag = self.obj_name in simulator["robots"]
+        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
+        self.robot = simulator["robots"][self.obj_name]
         # If no links are provided, take baselink
         if len(links) == 0:
             for pb_name, part in self.robot.parts.items():
@@ -64,8 +63,8 @@ class LinkSensor(EngineNode):
                 if linkindex == -1:
                     links.append(pb_name)
         self.links = links
-        self.mode = mode
-        self._p = self.simulator["client"]
+        self.mode = spec.config.mode
+        self._p = simulator["client"]
         self.physics_client_id = self._p._client
         self.link_cb = self._link_measurement(self._p, self.mode, self.robot, links)
 
@@ -74,8 +73,8 @@ class LinkSensor(EngineNode):
         """This link sensor is stateless, so nothing happens here."""
         pass
 
-    @register.inputs(tick=UInt64)
-    @register.outputs(obs=Float32MultiArray)
+    @register.inputs(tick=Space(shape=(), dtype="int64"))
+    @register.outputs(obs=Space(dtype="float32"))
     def callback(self, t_n: float, tick: Optional[Msg] = None):
         """Produces a link sensor measurement called `obs`.
 
@@ -83,7 +82,7 @@ class LinkSensor(EngineNode):
 
         Input `tick` ensures that this node is I/O synchronized with the simulator."""
         obs = self.link_cb()
-        return dict(obs=Float32MultiArray(data=obs))
+        return dict(obs=np.array(obs, dtype="float32"))
 
     @staticmethod
     def _link_measurement(p, mode, robot, links):
@@ -127,10 +126,9 @@ class LinkSensor(EngineNode):
 
 
 class JointSensor(EngineNode):
-    @staticmethod
-    @register.spec("JointSensor", EngineNode)
-    def spec(
-        spec: NodeSpec,
+    @classmethod
+    def make(
+        cls,
         name: str,
         rate: float,
         joints: List[str],
@@ -140,7 +138,6 @@ class JointSensor(EngineNode):
     ):
         """A spec to create a JointSensor node that provides sensor measurements for the specified set of joints.
 
-        :param spec: Holds the desired configuration in a Spec object.
         :param name: User specified node name.
         :param rate: Rate (Hz) at which the callback is called.
         :param joints: List of joints to be included in the measurements. Its order determines the ordering of the
@@ -150,37 +147,38 @@ class JointSensor(EngineNode):
         :param mode: Available: `position`, `velocity`, `force_torque`, and `applied_torque`.
         :return: NodeSpec
         """
+        spec = cls.get_specification()
+
         # Modify default node params
-        spec.config.name = name
-        spec.config.rate = rate
-        spec.config.process = process
+        spec.config.update(name=name, rate=rate, process=process, color=color)
         spec.config.inputs = ["tick"]
         spec.config.outputs = ["obs"]
 
         # Set parameters, defined by the signature of cls.initialize(...)
         spec.config.joints = joints
         spec.config.mode = mode
+        return spec
 
-    def initialize(self, joints, mode):
+    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the joint sensor node according to the spec."""
-        self.obj_name = self.config["name"]
+        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in self.simulator["robots"]
-        assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation node.'
-        self.joints = joints
-        self.mode = mode
-        self.robot = self.simulator["robots"][self.obj_name]
-        self._p = self.simulator["client"]
+        flag = self.obj_name in simulator["robots"]
+        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
+        self.joints = spec.config.joints
+        self.mode = spec.config.mode
+        self.robot = simulator["robots"][self.obj_name]
+        self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
         self.bodyUniqueId = []
         self.jointIndices = []
-        for _idx, pb_name in enumerate(joints):
+        for _idx, pb_name in enumerate(spec.config.joints):
             bodyid, jointindex = self.robot.jdict[pb_name].get_bodyid_jointindex()
             self.bodyUniqueId.append(bodyid), self.jointIndices.append(jointindex)
-            if mode == "force_torque":
+            if spec.config.mode == "force_torque":
                 self._p.enableJointForceTorqueSensor(
                     bodyUniqueId=bodyid, jointIndex=jointindex, enableSensor=True, physicsClientId=self.physics_client_id
                 )
@@ -191,8 +189,8 @@ class JointSensor(EngineNode):
         """This joint sensor is stateless, so nothing happens here."""
         pass
 
-    @register.inputs(tick=UInt64)
-    @register.outputs(obs=Float32MultiArray)
+    @register.inputs(tick=Space(shape=(), dtype="int64"))
+    @register.outputs(obs=Space(dtype="float32"))
     def callback(self, t_n: float, tick: Optional[Msg] = None):
         """Produces a joint sensor measurement called `obs`.
 
@@ -200,7 +198,7 @@ class JointSensor(EngineNode):
 
         Input `tick` ensures that this node is I/O synchronized with the simulator."""
         obs = self.joint_cb()
-        return dict(obs=Float32MultiArray(data=obs))
+        return dict(obs=np.array(obs, dtype="float32"))
 
     @staticmethod
     def _joint_measurement(p, mode, bodyUniqueId, jointIndices):
@@ -227,10 +225,9 @@ class JointSensor(EngineNode):
 
 
 class JointController(EngineNode):
-    @staticmethod
-    @register.spec("JointController", EngineNode)
-    def spec(
-        spec: NodeSpec,
+    @classmethod
+    def make(
+        cls,
         name: str,
         rate: float,
         joints: List[str],
@@ -247,7 +244,6 @@ class JointController(EngineNode):
         For more info on `vel_target`, `pos_gain`, and `vel_gain`, see `setJointMotorControlMultiDofArray` in
         https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#
 
-        :param spec: Holds the desired configuration in a Spec object.
         :param name: User specified node name.
         :param rate: Rate (Hz) at which the callback is called.
         :param joints: List of controlled joints. Its order determines the ordering of the applied commands.
@@ -261,10 +257,10 @@ class JointController(EngineNode):
                           according to `joints`.
         :return: NodeSpec
         """
+        spec = cls.get_specification()
+
         # Modify default node params
-        spec.config.name = name
-        spec.config.rate = rate
-        spec.config.process = process
+        spec.config.update(name=name, rate=rate, process=process, color=color)
         spec.config.inputs = ["tick", "action"]
         spec.config.outputs = ["action_applied"]
 
@@ -275,29 +271,30 @@ class JointController(EngineNode):
         spec.config.pos_gain = pos_gain if pos_gain else [0.2] * len(joints)
         spec.config.vel_gain = vel_gain if vel_gain else [0.2] * len(joints)
         spec.config.max_force = max_force if max_force else [999.0] * len(joints)
+        return spec
 
-    def initialize(self, joints, mode, vel_target, pos_gain, vel_gain, max_force):
+    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the joint controller node according to the spec."""
-        # We will probably use self.simulator[self.obj_name] in callback & reset.
-        self.obj_name = self.config["name"]
+        # We will probably use simulator[self.obj_name] in callback & reset.
+        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in self.simulator["robots"]
-        assert flag, f'Simulator object "{self.simulator}" is not compatible with this simulation node.'
-        self.joints = joints
-        self.mode = mode
-        self.vel_target = vel_target
-        self.pos_gain = pos_gain
-        self.vel_gain = vel_gain
-        self.max_force = max_force
-        self.robot = self.simulator["robots"][self.obj_name]
-        self._p = self.simulator["client"]
+        flag = self.obj_name in simulator["robots"]
+        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
+        self.joints = spec.config.joints
+        self.mode = spec.config.mode
+        self.vel_target = spec.config.vel_target
+        self.pos_gain = spec.config.pos_gain
+        self.vel_gain = spec.config.vel_gain
+        self.max_force = spec.config.max_force
+        self.robot = simulator["robots"][self.obj_name]
+        self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
         self.bodyUniqueId = []
         self.jointIndices = []
-        for _idx, pb_name in enumerate(joints):
+        for _idx, pb_name in enumerate(spec.config.joints):
             bodyid, jointindex = self.robot.jdict[pb_name].get_bodyid_jointindex()
             self.bodyUniqueId.append(bodyid), self.jointIndices.append(jointindex)
 
@@ -317,8 +314,8 @@ class JointController(EngineNode):
         """This joint controller is stateless, so nothing happens here."""
         pass
 
-    @register.inputs(tick=UInt64, action=Float32MultiArray)
-    @register.outputs(action_applied=Float32MultiArray)
+    @register.inputs(tick=Space(shape=(), dtype="int64"), action=Space(dtype="float32"))
+    @register.outputs(action_applied=Space(dtype="float32"))
     def callback(
         self,
         t_n: float,
@@ -334,7 +331,7 @@ class JointController(EngineNode):
 
         Input `tick` ensures that this node is I/O synchronized with the simulator."""
         # Set action in pybullet
-        self.joint_cb(action.msgs[-1].data)
+        self.joint_cb(action.msgs[-1])
         # Send action that has been applied.
         return dict(action_applied=action.msgs[-1])
 
@@ -402,10 +399,9 @@ class JointController(EngineNode):
 
 
 class CameraSensor(EngineNode):
-    @staticmethod
-    @register.spec("CameraSensor", EngineNode)
-    def spec(
-        spec: NodeSpec,
+    @classmethod
+    def make(
+        cls,
         name: str,
         rate: float,
         process: Optional[int] = p.ENGINE,
@@ -422,7 +418,6 @@ class CameraSensor(EngineNode):
         For more info on `fov`, `near_val`, and `far_val`, see the `Synthetic Camera Rendering` section in
         https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.33wr3gwy5kuj
 
-        :param spec: Holds the desired configuration in a Spec object.
         :param name: User specified node name.
         :param rate: Rate (Hz) at which the callback is called.
         :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
@@ -437,10 +432,10 @@ class CameraSensor(EngineNode):
         :param far_val: Far plane distance.
         :return: NodeSpec
         """
+        spec = cls.get_specification()
+
         # Modify default node params
-        spec.config.name = name
-        spec.config.rate = rate
-        spec.config.process = process
+        spec.config.update(name=name, rate=rate, process=process, color=color)
         spec.config.inputs = inputs if isinstance(inputs, list) else ["tick"]
         spec.config.outputs = ["image"]
 
@@ -452,62 +447,50 @@ class CameraSensor(EngineNode):
             spec.config.states.append("orientation")
 
         # Set parameters, defined by the signature of cls.initialize(...)
-        spec.config.mode = mode
+        spec.config.update(mode=mode, fov=fov, near_val=near_val, far_val=far_val)
+        spec.config.flags = pybullet.ER_NO_SEGMENTATION_MASK
+        spec.config.renderer = pybullet.ER_BULLET_HARDWARE_OPENGL
         spec.config.render_shape = render_shape if isinstance(render_shape, list) else [480, 680]
-        spec.config.fov = fov
-        spec.config.near_val = near_val
-        spec.config.far_val = far_val
 
         # Position
-        spec.states.pos.space_converter = SpaceConverter.make(
-            "Space_Float32MultiArray",
-            dtype="float32",
-            low=[-1, -1, 0],
-            high=[1, 1, 0],
-        )
+        spec.states.pos.space = Space(low=[-5, -5, 0], high=[5, 5, 5])
 
         # Orientation
-        spec.states.orientation.space_converter = SpaceConverter.make(
-            "Space_Float32MultiArray",
-            dtype="float32",
-            low=[0, 0, -1, -1],
-            high=[0, 0, 1, 1],
-        )
+        spec.states.orientation.space = Space(low=[-1, -1, -1, -1], high=[1, 1, 1, 1])
 
-    def initialize(
-        self,
-        mode,
-        render_shape,
-        fov=57,
-        near_val=0.1,
-        far_val=100,
-        flags=pybullet.ER_NO_SEGMENTATION_MASK,
-        renderer=pybullet.ER_BULLET_HARDWARE_OPENGL,
-    ):
+        # Image
+        channels = 3 if mode == "rgb" else 4
+        shape = (spec.config.render_shape[0], spec.config.render_shape[1], channels)
+        spec.outputs.image.space = Space(low=0, high=255, shape=shape, dtype="uint8")
+        return spec
+
+    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
         """Initializes the camera sensor according to the spec."""
-        if self.simulator:
-            self._p = self.simulator["client"]
+        if simulator:
+            self._p = simulator["client"]
         else:
             raise NotImplementedError("Currently, rendering leads to an error when connecting via shared memory.")
             # from pybullet_utils import bullet_client
             # self._p = bullet_client.BulletClient(pybullet.SHARED_MEMORY, options="-shared_memory_key 1234")
             # self._p = pybullet.connect(pybullet.SHARED_MEMORY, key=1234)
         # print("[rgb]: ", self._p._client)
-        self.mode = mode
-        self.height, self.width = render_shape
-        self.intrinsic = dict(fov=fov, nearVal=near_val, farVal=far_val, aspect=self.height / self.width)
+        self.mode = spec.config.mode
+        self.height, self.width = spec.config.render_shape
+        self.intrinsic = dict(
+            fov=spec.config.fov, nearVal=spec.config.near_val, farVal=spec.config.far_val, aspect=self.height / self.width
+        )
         self.cb_args = dict(
             width=self.width,
             height=self.height,
             viewMatrix=None,
             projectionMatrix=None,
-            flags=flags,
-            renderer=renderer,
+            flags=spec.config.flags,
+            renderer=spec.config.renderer,
             physicsClientId=self._p._client,
         )
         self.cam_cb = self._camera_measurement(self._p, self.mode, self.cb_args)
 
-    @register.states(pos=Float32MultiArray, orientation=Float32MultiArray)
+    @register.states(pos=Space(dtype="float32"), orientation=Space(dtype="float32"))
     def reset(self, pos=None, orientation=None):
         """The static position and orientation of the camera sensor can be reset at the start of a new episode.
 
@@ -517,14 +500,14 @@ class CameraSensor(EngineNode):
         self.cb_args["projectionMatrix"] = pybullet.computeProjectionMatrixFOV(**self.intrinsic)
 
         if pos is not None and orientation is not None:
-            self.cb_args["viewMatrix"] = self._view_matrix(pos.data, orientation.data, self._p._client)
-        if pos:
-            self.pos = pos.data
-        if orientation:
-            self.orientation = orientation.data
+            self.cb_args["viewMatrix"] = self._view_matrix(pos, orientation, self._p._client)
+        if pos is not None:
+            self.pos = pos
+        if orientation is not None:
+            self.orientation = orientation
 
-    @register.inputs(tick=UInt64, pos=Float32MultiArray, orientation=Float32MultiArray)
-    @register.outputs(image=Image)
+    @register.inputs(tick=Space(shape=(), dtype="int64"), pos=Space(dtype="float32"), orientation=Space(dtype="float32"))
+    @register.outputs(image=Space(dtype="uint8"))
     def callback(self, t_n: float, tick: Msg = None, pos: Msg = None, orientation: Msg = None):
         """Produces a camera sensor measurement called `image`.
 
@@ -535,16 +518,13 @@ class CameraSensor(EngineNode):
 
         Input `tick` ensures that this node is I/O synchronized with the simulator."""
         if pos:
-            self.pos = pos.msgs[-1].data
+            self.pos = pos.msgs[-1]
         if orientation:
-            self.orientation = orientation.msgs[-1].data
+            self.orientation = orientation.msgs[-1]
 
         if pos is not None or orientation is not None:
             self.cb_args["viewMatrix"] = self._view_matrix(self.pos, self.orientation, self._p._client)
-        obs = self.cam_cb()
-        img = Image(
-            data=obs.tobytes("C"), height=self.height, width=self.width, encoding="rgb8", step=obs.shape[-1] * self.width
-        )
+        img = self.cam_cb()
         return dict(image=img)
 
     @staticmethod
