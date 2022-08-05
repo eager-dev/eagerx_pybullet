@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict
 from scipy.spatial.transform import Rotation
 import numpy as np
+import cv2
 import pybullet
 
 # IMPORT EAGERX
@@ -412,6 +413,7 @@ class CameraSensor(EngineNode):
         fov: float = 57.0,
         near_val: float = 0.1,
         far_val: float = 100.0,
+        # encoding: str = "rgb",
     ):
         """A spec to create a CameraSensor node that provides images that can be used for perception and/or rendering.
 
@@ -422,7 +424,7 @@ class CameraSensor(EngineNode):
         :param rate: Rate (Hz) at which the callback is called.
         :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
         :param color: Specifies the color of logged messages & node color in the GUI.
-        :param mode: Available: `rgb`, `rgbd`, and `rgba`.
+        :param mode: Available: `rgb`, `bgr`, `rgbd`, `bgrd`, `bgra` and `rgba`.
         :param inputs: Optionally, if the camera pose changes over time select `pos` and/or `orientation` & connect
                        accordingly, to dynamically change the camera view. If not selected, `pos` and/or `orientation` are
                        selected as states. This means you can choose a static camera pose at the start of every episode.
@@ -430,6 +432,7 @@ class CameraSensor(EngineNode):
         :param fov: Field of view.
         :param near_val: Near plane distance.
         :param far_val: Far plane distance.
+        # :param encoding: The encoding (`bgr` or `rgb`) of the rendered image.
         :return: NodeSpec
         """
         spec = cls.get_specification()
@@ -459,7 +462,7 @@ class CameraSensor(EngineNode):
         spec.states.orientation.space = Space(low=[-1, -1, -1, -1], high=[1, 1, 1, 1])
 
         # Image
-        channels = 3 if mode == "rgb" else 4
+        channels = 3 if mode in ["rgb", "bgr"] else 4
         shape = (spec.config.render_shape[0], spec.config.render_shape[1], channels)
         spec.outputs.image.space = Space(low=0, high=255, shape=shape, dtype="uint8")
         return spec
@@ -539,22 +542,25 @@ class CameraSensor(EngineNode):
 
     @staticmethod
     def _camera_measurement(p, mode, cb_args):
-        if mode == "rgb":
+        if mode in ["rgb", "bgr"]:
 
             def cb():
                 _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                rgba = rgba if mode == "rgb" else cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
                 return rgba[:, :, :3]
 
-        elif mode == "rgba":
+        elif mode in ["rgba", "bgra"]:
 
             def cb():
                 _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                rgba = rgba if mode == "rgba" else cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
                 return rgba[:, :, :4]
 
-        elif mode == "rgbd":
+        elif mode in ["rgbd", "bgrd"]:
 
             def cb():
                 _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                rgba = rgba if mode == "rgbd" else cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
                 depth *= 255  # Convert depth to uint8
                 rgba[:, :, 3] = depth.astype("uint8")  # replace alpha channel with depth
                 return rgba[:, :, :4]
