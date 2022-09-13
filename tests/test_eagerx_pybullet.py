@@ -43,8 +43,8 @@ def test_eagerx_pybullet(control_mode, p):
                       rate=rate,
                       # sensors=["pos", "vel", "orientation", "angular_vel"],
                       sensors=["pos", "vel", "orientation", "angular_vel"],
-                      # states=["pos", "vel", "orientation", "angular_vel"],
-                      states=[],
+                      states=["pos", "vel", "orientation", "angular_vel"],
+                      # states=[],
                       )
     graph.add(cube)
 
