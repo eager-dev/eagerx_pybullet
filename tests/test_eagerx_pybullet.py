@@ -26,27 +26,28 @@ def test_eagerx_pybullet(control_mode, p):
     from example.objects.camera.objects import Camera
     import example.objects
     urdf = os.path.dirname(example.objects.__file__) + "/camera/assets/realsense2_d435.urdf"
-    # cam = Camera.make(
-    #     "cam",
-    #     rate=rate,
-    #     sensors=["rgb", "rgba", "rgbd"],
-    #     urdf=urdf,
-    #     optical_link="camera_color_optical_frame",
-    #     calibration_link="camera_bottom_screw_frame",
-    # )
-    # graph.add(cam)
+    cam = Camera.make(
+        "cam",
+        rate=rate,
+        sensors=["rgb", "rgba", "rgbd"],
+        states=["pos", "orientation"],
+        urdf=urdf,
+        optical_link="camera_color_optical_frame",
+        calibration_link="camera_bottom_screw_frame",
+    )
+    graph.add(cam)
 
     # Create solid object
-    from example.objects.solid.objects import Solid
-    cube = Solid.make("cube",
-                      urdf="cube_small.urdf",
-                      rate=rate,
-                      # sensors=["pos", "vel", "orientation", "angular_vel"],
-                      sensors=["pos", "vel", "orientation", "angular_vel"],
-                      states=["pos", "vel", "orientation", "angular_vel"],
-                      # states=[],
-                      )
-    graph.add(cube)
+    # from example.objects.solid.objects import Solid
+    # cube = Solid.make("cube",
+    #                   urdf="cube_small.urdf",
+    #                   rate=rate,
+    #                   # sensors=["pos", "vel", "orientation", "angular_vel"],
+    #                   sensors=["pos", "vel", "orientation", "angular_vel"],
+    #                   states=["pos", "vel", "orientation", "angular_vel"],
+    #                   # states=[],
+    #                   )
+    # graph.add(cube)
 
     # Create arm
     from example.objects.vx300s.objects import Vx300s
