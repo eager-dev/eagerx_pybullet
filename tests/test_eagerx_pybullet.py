@@ -12,7 +12,7 @@ ENV = eagerx.process.ENVIRONMENT
 @pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
-    eagerx.set_log_level(eagerx.WARN)
+    eagerx.set_log_level(eagerx.DEBUG)
 
     # Define unique name for test environment
     name = f"{control_mode}_{p}"
@@ -34,7 +34,7 @@ def test_eagerx_pybullet(control_mode, p):
         optical_link="camera_color_optical_frame",
         calibration_link="camera_bottom_screw_frame",
     )
-    # graph.add(cam)
+    graph.add(cam)
 
     # Create solid object
     from example.objects.solid.objects import Solid
