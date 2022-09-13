@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.10 (2022-09-13)
+### Fix
+* Bgr encoding, graph refactor ([#37](https://github.com/eager-dev/eagerx_pybullet/issues/37)) ([`36528c7`](https://github.com/eager-dev/eagerx_pybullet/commit/36528c72d52bd7bf86ff6f847febe482db19e604))
+
 ## v0.1.9 (2022-07-20)
 ### Fix
 * Codestyle ([`414fb1e`](https://github.com/eager-dev/eagerx_pybullet/commit/414fb1e5c60ce9e7d1aa013a5e7ad996fea17161))
