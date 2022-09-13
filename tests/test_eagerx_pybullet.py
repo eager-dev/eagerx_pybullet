@@ -52,9 +52,9 @@ def test_eagerx_pybullet(control_mode, p):
     from example.objects.vx300s.objects import Vx300s
     arm = Vx300s.make(
         "viper",
-        sensors=["pos", "vel"],
+        sensors=["pos"],
         # sensors=["pos", "vel", "ft", "at"],
-        actuators=["joint_control"],
+        actuators=["joint_control", "gripper_control"],
         # actuators=["joint_control"],
         states=["pos", "vel", "gripper"],
         rate=rate,
@@ -64,7 +64,7 @@ def test_eagerx_pybullet(control_mode, p):
 
     # Connect the nodes
     graph.connect(action="joints", target=arm.actuators.joint_control)
-    # graph.connect(action="gripper", target=arm.actuators.gripper_control)
+    graph.connect(action="gripper", target=arm.actuators.gripper_control)
     graph.connect(source=arm.sensors.pos, observation="observation")
     # graph.connect(source=arm.sensors.vel, observation="vel")
     # graph.connect(source=arm.sensors.ft, observation="ft")
