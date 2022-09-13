@@ -9,7 +9,7 @@ ENV = eagerx.process.ENVIRONMENT
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
+@pytest.mark.parametrize("control_mode", ["position_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
     eagerx.set_log_level(eagerx.DEBUG)
@@ -38,23 +38,23 @@ def test_eagerx_pybullet(control_mode, p):
     graph.add(cam)
 
     # Create solid object
-    # from example.objects.solid.objects import Solid
-    # cube = Solid.make("cube",
-    #                   urdf="cube_small.urdf",
-    #                   rate=rate,
-    #                   # sensors=["pos", "vel", "orientation", "angular_vel"],
-    #                   sensors=["pos", "vel", "orientation", "angular_vel"],
-    #                   states=["pos", "vel", "orientation", "angular_vel"],
-    #                   # states=[],
-    #                   )
-    # graph.add(cube)
+    from example.objects.solid.objects import Solid
+    cube = Solid.make("cube",
+                      urdf="cube_small.urdf",
+                      rate=rate,
+                      # sensors=["pos", "vel", "orientation", "angular_vel"],
+                      sensors=["pos"],
+                      states=["pos", "vel", "orientation", "angular_vel"],
+                      # states=[],
+                      )
+    graph.add(cube)
 
     # Create arm
     from example.objects.vx300s.objects import Vx300s
     arm = Vx300s.make(
         "viper",
         sensors=["pos"],
-        # sensors=["pos"],
+        # sensors=["pos", "vel", "ft", "at"],
         actuators=["joint_control"],
         # actuators=["joint_control"],
         states=["pos", "vel", "gripper"],
