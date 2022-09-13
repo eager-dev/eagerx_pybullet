@@ -9,7 +9,7 @@ ENV = eagerx.process.ENVIRONMENT
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize("control_mode", ["position_control"])
+@pytest.mark.parametrize("control_mode", ["position_control", "position_control", "position_control", "position_control","position_control", "position_control", "position_control","position_control", "position_control","position_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
     eagerx.set_log_level(eagerx.DEBUG)
@@ -43,7 +43,7 @@ def test_eagerx_pybullet(control_mode, p):
                       urdf="cube_small.urdf",
                       rate=rate,
                       # sensors=["pos", "vel", "orientation", "angular_vel"],
-                      sensors=["pos"],
+                      sensors=["pos", "vel"],
                       states=["pos", "vel", "orientation", "angular_vel"],
                       # states=[],
                       )
