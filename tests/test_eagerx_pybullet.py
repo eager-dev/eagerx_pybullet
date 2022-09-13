@@ -34,7 +34,7 @@ def test_eagerx_pybullet(control_mode, p):
         optical_link="camera_color_optical_frame",
         calibration_link="camera_bottom_screw_frame",
     )
-    graph.add(cam)
+    # graph.add(cam)
 
     # Create solid object
     from example.objects.solid.objects import Solid
