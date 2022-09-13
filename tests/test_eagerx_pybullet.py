@@ -42,7 +42,6 @@ def test_eagerx_pybullet(control_mode, p):
     cube = Solid.make("cube",
                       urdf="cube_small.urdf",
                       rate=rate,
-                      # sensors=["pos", "vel", "orientation", "angular_vel"],
                       sensors=["pos", "vel", "orientation", "angular_vel"],
                       states=["pos", "vel", "orientation", "angular_vel"],
                       # states=[],
@@ -53,7 +52,7 @@ def test_eagerx_pybullet(control_mode, p):
     from example.objects.vx300s.objects import Vx300s
     arm = Vx300s.make(
         "viper",
-        sensors=["pos", "vel"],
+        sensors=["pos"],
         # sensors=["pos", "vel", "ft", "at"],
         actuators=["joint_control"],
         # actuators=["joint_control"],
