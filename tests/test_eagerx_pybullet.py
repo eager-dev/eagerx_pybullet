@@ -37,9 +37,16 @@ def test_eagerx_pybullet(control_mode, p):
     # graph.add(cam)
 
     # Create solid object
-    # from example.objects.solid.objects import Solid
-    # cube = Solid.make("cube", urdf="cube_small.urdf", rate=rate)
-    # graph.add(cube)
+    from example.objects.solid.objects import Solid
+    cube = Solid.make("cube",
+                      urdf="cube_small.urdf",
+                      rate=rate,
+                      # sensors=["pos", "vel", "orientation", "angular_vel"],
+                      sensors=["pos", "vel", "orientation", "angular_vel"],
+                      # states=["pos", "vel", "orientation", "angular_vel"],
+                      states=[],
+                      )
+    graph.add(cube)
 
     # Create arm
     from example.objects.vx300s.objects import Vx300s
