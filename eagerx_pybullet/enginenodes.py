@@ -6,7 +6,7 @@ import pybullet
 
 # IMPORT EAGERX
 from eagerx import Space
-from eagerx.core.specs import NodeSpec, ObjectSpec
+from eagerx.core.specs import NodeSpec
 from eagerx.core.constants import process as p
 from eagerx.utils.utils import Msg
 from eagerx.core.entities import EngineNode
@@ -46,17 +46,13 @@ class LinkSensor(EngineNode):
         spec.config.mode = mode
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the link sensor node according to the spec."""
         links = spec.config.links
-
-        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         # If no links are provided, take baselink
         if len(links) == 0:
             for pb_name, part in self.robot.parts.items():
@@ -160,17 +156,14 @@ class JointSensor(EngineNode):
         spec.config.mode = mode
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the joint sensor node according to the spec."""
-        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
         self.joints = spec.config.joints
         self.mode = spec.config.mode
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
@@ -277,15 +270,12 @@ class JointController(EngineNode):
         spec.config.max_force = max_force if max_force else [999.0] * len(joints)
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the joint controller node according to the spec."""
-        # We will probably use simulator[self.obj_name] in callback & reset.
-        self.obj_name = object_spec.config.name
+        # We will probably use simulator in callback & reset.
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
         self.joints = spec.config.joints
         self.mode = spec.config.mode
         self.vel_target = spec.config.vel_target
@@ -293,7 +283,7 @@ class JointController(EngineNode):
         self.vel_gain = spec.config.vel_gain
         self.max_vel = spec.config.max_vel
         self.max_force = spec.config.max_force
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
@@ -421,7 +411,7 @@ class CameraSensor(EngineNode):
         fov: float = 57.0,
         near_val: float = 0.1,
         far_val: float = 10.0,
-        debug: bool = False
+        debug: bool = False,
     ):
         """A spec to create a CameraSensor node that provides images that can be used for perception and/or rendering.
 
@@ -481,7 +471,7 @@ class CameraSensor(EngineNode):
         spec.outputs.image.space = Space(low=0, high=255, shape=shape, dtype="uint8")
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the camera sensor according to the spec."""
         if simulator:
             self._p = simulator["client"]
@@ -532,17 +522,23 @@ class CameraSensor(EngineNode):
     def _debug_plot_camera_pose(self, position, orientation, p):
         rot = R.from_quat(orientation).as_matrix()
         lineFromXYZ = position
-        x_axis = (0.1*rot[:, 0] + position, [1, 0, 0])
-        y_axis = (0.1*rot[:, 1] + position, [0, 1, 0])
-        z_axis = (0.1*rot[:, 2] + position, [0, 0, 1])
+        x_axis = (0.1 * rot[:, 0] + position, [1, 0, 0])
+        y_axis = (0.1 * rot[:, 1] + position, [0, 1, 0])
+        z_axis = (0.1 * rot[:, 2] + position, [0, 0, 1])
         if self.x_axis_id is None:
             self.x_axis_id = p.addUserDebugLine(lineFromXYZ, x_axis[0], x_axis[1], lineWidth=3.0)
             self.y_axis_id = p.addUserDebugLine(lineFromXYZ, y_axis[0], y_axis[1], lineWidth=3.0)
             self.z_axis_id = p.addUserDebugLine(lineFromXYZ, z_axis[0], z_axis[1], lineWidth=3.0)
         else:
-            self.x_axis_id = p.addUserDebugLine(lineFromXYZ, x_axis[0], x_axis[1], lineWidth=3.0, replaceItemUniqueId=self.x_axis_id)
-            self.y_axis_id = p.addUserDebugLine(lineFromXYZ, y_axis[0], y_axis[1], lineWidth=3.0, replaceItemUniqueId=self.y_axis_id)
-            self.z_axis_id = p.addUserDebugLine(lineFromXYZ, z_axis[0], z_axis[1], lineWidth=3.0, replaceItemUniqueId=self.z_axis_id)
+            self.x_axis_id = p.addUserDebugLine(
+                lineFromXYZ, x_axis[0], x_axis[1], lineWidth=3.0, replaceItemUniqueId=self.x_axis_id
+            )
+            self.y_axis_id = p.addUserDebugLine(
+                lineFromXYZ, y_axis[0], y_axis[1], lineWidth=3.0, replaceItemUniqueId=self.y_axis_id
+            )
+            self.z_axis_id = p.addUserDebugLine(
+                lineFromXYZ, z_axis[0], z_axis[1], lineWidth=3.0, replaceItemUniqueId=self.z_axis_id
+            )
         # todo: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.i3ffpefe7f3
 
     @register.inputs(tick=Space(shape=(), dtype="int64"), pos=Space(dtype="float32"), orientation=Space(dtype="float32"))

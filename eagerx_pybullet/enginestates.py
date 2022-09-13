@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from eagerx.core.entities import EngineState, ObjectSpec
+from eagerx.core.entities import EngineState
 from eagerx.core.specs import EngineStateSpec
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -19,14 +19,11 @@ class JointState(EngineState):
         spec.config.mode = mode
         return spec
 
-    def initialize(self, spec: EngineStateSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: EngineStateSpec, simulator: Dict):
         """Initializes the engine state according to the spec."""
-        self.obj_name = object_spec.config.name
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation state.'
         self.joints = spec.config.joints
         self.mode = spec.config.mode
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
@@ -94,13 +91,10 @@ class LinkState(EngineState):
         spec.config.link = link
         return spec
 
-    def initialize(self, spec: EngineStateSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: EngineStateSpec, simulator: Dict):
         """Initializes the engine state according to the spec."""
-        self.obj_name = object_spec.config.name
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation state.'
         self.mode = spec.config.mode
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         if spec.config.link is None:
             for _pb_name, part in self.robot.parts.items():
                 bodyid, linkindex = part.get_bodyid_linkindex()
@@ -194,11 +188,10 @@ class PbDynamics(EngineState):
         spec.config.links = links if isinstance(links, list) else []
         return spec
 
-    def initialize(self, spec: EngineStateSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: EngineStateSpec, simulator: Dict):
         """Initializes the engine state according to the spec."""
-        self.obj_name = object_spec.config.name
         self.parameter = spec.config.parameter
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         self._p = simulator["client"]
         self.links = spec.config.links
         if len(self.links) == 0:
