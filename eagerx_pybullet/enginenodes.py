@@ -1,11 +1,12 @@
 from typing import Optional, List, Dict
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation as R
 import numpy as np
+import cv2
 import pybullet
 
 # IMPORT EAGERX
 from eagerx import Space
-from eagerx.core.specs import NodeSpec, ObjectSpec
+from eagerx.core.specs import NodeSpec
 from eagerx.core.constants import process as p
 from eagerx.utils.utils import Msg
 from eagerx.core.entities import EngineNode
@@ -45,17 +46,13 @@ class LinkSensor(EngineNode):
         spec.config.mode = mode
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the link sensor node according to the spec."""
         links = spec.config.links
-
-        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         # If no links are provided, take baselink
         if len(links) == 0:
             for pb_name, part in self.robot.parts.items():
@@ -159,17 +156,14 @@ class JointSensor(EngineNode):
         spec.config.mode = mode
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the joint sensor node according to the spec."""
-        self.obj_name = object_spec.config.name
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
         self.joints = spec.config.joints
         self.mode = spec.config.mode
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
@@ -237,6 +231,7 @@ class JointController(EngineNode):
         vel_target: List[float] = None,
         pos_gain: List[float] = None,
         vel_gain: List[float] = None,
+        max_vel: List[float] = None,
         max_force: List[float] = None,
     ):
         """A spec to create a JointController node that controls a set of joints.
@@ -253,6 +248,7 @@ class JointController(EngineNode):
         :param vel_target: The desired velocity. Ordering according to `joints`.
         :param pos_gain: Position gain. Ordering according to `joints`.
         :param vel_gain: Velocity gain. Ordering according to `joints`.
+        :param max_vel: in `position_control` this limits the velocity to a maximum.
         :param max_force: Maximum force when mode in [`position_control`, `velocity_control`, `pd_control`]. Ordering
                           according to `joints`.
         :return: NodeSpec
@@ -270,25 +266,24 @@ class JointController(EngineNode):
         spec.config.vel_target = vel_target if vel_target else [0.0] * len(joints)
         spec.config.pos_gain = pos_gain if pos_gain else [0.2] * len(joints)
         spec.config.vel_gain = vel_gain if vel_gain else [0.2] * len(joints)
+        spec.config.max_vel = max_vel if max_vel else [3.14] * len(joints)
         spec.config.max_force = max_force if max_force else [999.0] * len(joints)
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the joint controller node according to the spec."""
-        # We will probably use simulator[self.obj_name] in callback & reset.
-        self.obj_name = object_spec.config.name
+        # We will probably use simulator in callback & reset.
         assert self.process == p.ENGINE, (
             "Simulation node requires a reference to the simulator," " hence it must be launched in the Engine process"
         )
-        flag = self.obj_name in simulator["robots"]
-        assert flag, f'Simulator object "{simulator}" is not compatible with this simulation node.'
         self.joints = spec.config.joints
         self.mode = spec.config.mode
         self.vel_target = spec.config.vel_target
         self.pos_gain = spec.config.pos_gain
         self.vel_gain = spec.config.vel_gain
+        self.max_vel = spec.config.max_vel
         self.max_force = spec.config.max_force
-        self.robot = simulator["robots"][self.obj_name]
+        self.robot = simulator["object"]
         self._p = simulator["client"]
         self.physics_client_id = self._p._client
 
@@ -306,6 +301,7 @@ class JointController(EngineNode):
             self.pos_gain,
             self.vel_gain,
             self.vel_target,
+            self.max_vel,
             self.max_force,
         )
 
@@ -336,21 +332,24 @@ class JointController(EngineNode):
         return dict(action_applied=action.msgs[-1])
 
     @staticmethod
-    def _joint_control(p, mode, bodyUniqueId, jointIndices, pos_gain, vel_gain, vel_target, max_force):
+    def _joint_control(p, mode, bodyUniqueId, jointIndices, pos_gain, vel_gain, vel_target, max_vel, max_force):
         if mode == "position_control":
 
             def cb(action):
-                return p.setJointMotorControlArray(
-                    bodyUniqueId=bodyUniqueId,
-                    jointIndices=jointIndices,
-                    controlMode=pybullet.POSITION_CONTROL,
-                    targetPositions=action,
-                    targetVelocities=vel_target,
-                    positionGains=pos_gain,
-                    velocityGains=vel_gain,
-                    forces=max_force,
-                    physicsClientId=p._client,
-                )
+                for idx, a, v, kp, kd, mv, mf in zip(jointIndices, action, vel_target, pos_gain, vel_gain, max_vel, max_force):
+                    p.setJointMotorControl2(
+                        bodyIndex=bodyUniqueId,
+                        jointIndex=idx,
+                        controlMode=pybullet.POSITION_CONTROL,
+                        targetPosition=a,
+                        targetVelocity=v,
+                        positionGain=kp,
+                        velocityGain=kd,
+                        maxVelocity=mv,
+                        force=mf,
+                        physicsClientId=p._client,
+                    )
+                return
 
         elif mode == "velocity_control":
 
@@ -411,25 +410,32 @@ class CameraSensor(EngineNode):
         render_shape: List[int] = None,
         fov: float = 57.0,
         near_val: float = 0.1,
-        far_val: float = 100.0,
+        far_val: float = 10.0,
+        debug: bool = False,
     ):
         """A spec to create a CameraSensor node that provides images that can be used for perception and/or rendering.
 
         For more info on `fov`, `near_val`, and `far_val`, see the `Synthetic Camera Rendering` section in
         https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.33wr3gwy5kuj
 
+        It is considered that:
+         - the position is the camera eye position in Cartesian world coordinates.
+         - the positive z-axis of the camera pose in Cartesian world coordinates points to the camera target.
+         - The negative y-axis of the camera pose in Cartesian world coordinates points upward in the image.
+
         :param name: User specified node name.
         :param rate: Rate (Hz) at which the callback is called.
         :param process: Process in which this node is launched. See :class:`~eagerx.core.constants.process` for all options.
         :param color: Specifies the color of logged messages & node color in the GUI.
-        :param mode: Available: `rgb`, `rgbd`, and `rgba`.
+        :param mode: Available: `rgb`, `bgr`, `rgbd`, `bgrd`, `bgra` and `rgba`.
         :param inputs: Optionally, if the camera pose changes over time select `pos` and/or `orientation` & connect
                        accordingly, to dynamically change the camera view. If not selected, `pos` and/or `orientation` are
                        selected as states. This means you can choose a static camera pose at the start of every episode.
         :param render_shape: The shape of the produced images [height, width].
         :param fov: Field of view.
-        :param near_val: Near plane distance.
-        :param far_val: Far plane distance.
+        :param near_val: Near plane distance [m].
+        :param far_val: Far plane distance [m].
+        :param debug: True will plot the camera pose using debug lines.
         :return: NodeSpec
         """
         spec = cls.get_specification()
@@ -451,6 +457,7 @@ class CameraSensor(EngineNode):
         spec.config.flags = pybullet.ER_NO_SEGMENTATION_MASK
         spec.config.renderer = pybullet.ER_BULLET_HARDWARE_OPENGL
         spec.config.render_shape = render_shape if isinstance(render_shape, list) else [480, 680]
+        spec.config.debug = debug
 
         # Position
         spec.states.pos.space = Space(low=[-5, -5, 0], high=[5, 5, 5])
@@ -459,12 +466,12 @@ class CameraSensor(EngineNode):
         spec.states.orientation.space = Space(low=[-1, -1, -1, -1], high=[1, 1, 1, 1])
 
         # Image
-        channels = 3 if mode == "rgb" else 4
+        channels = 3 if mode in ["rgb", "bgr"] else 4
         shape = (spec.config.render_shape[0], spec.config.render_shape[1], channels)
         spec.outputs.image.space = Space(low=0, high=255, shape=shape, dtype="uint8")
         return spec
 
-    def initialize(self, spec: NodeSpec, object_spec: ObjectSpec, simulator: Dict):
+    def initialize(self, spec: NodeSpec, simulator: Dict):
         """Initializes the camera sensor according to the spec."""
         if simulator:
             self._p = simulator["client"]
@@ -475,6 +482,10 @@ class CameraSensor(EngineNode):
             # self._p = pybullet.connect(pybullet.SHARED_MEMORY, key=1234)
         # print("[rgb]: ", self._p._client)
         self.mode = spec.config.mode
+        self.debug = spec.config.debug
+        self.x_axis_id = None
+        self.y_axis_id = None
+        self.z_axis_id = None
         self.height, self.width = spec.config.render_shape
         self.intrinsic = dict(
             fov=spec.config.fov, nearVal=spec.config.near_val, farVal=spec.config.far_val, aspect=self.height / self.width
@@ -500,11 +511,35 @@ class CameraSensor(EngineNode):
         self.cb_args["projectionMatrix"] = pybullet.computeProjectionMatrixFOV(**self.intrinsic)
 
         if pos is not None and orientation is not None:
+            if self.debug:
+                self._debug_plot_camera_pose(pos, orientation, self._p)
             self.cb_args["viewMatrix"] = self._view_matrix(pos, orientation, self._p._client)
         if pos is not None:
             self.pos = pos
         if orientation is not None:
             self.orientation = orientation
+
+    def _debug_plot_camera_pose(self, position, orientation, p):
+        rot = R.from_quat(orientation).as_matrix()
+        lineFromXYZ = position
+        x_axis = (0.1 * rot[:, 0] + position, [1, 0, 0])
+        y_axis = (0.1 * rot[:, 1] + position, [0, 1, 0])
+        z_axis = (0.1 * rot[:, 2] + position, [0, 0, 1])
+        if self.x_axis_id is None:
+            self.x_axis_id = p.addUserDebugLine(lineFromXYZ, x_axis[0], x_axis[1], lineWidth=3.0)
+            self.y_axis_id = p.addUserDebugLine(lineFromXYZ, y_axis[0], y_axis[1], lineWidth=3.0)
+            self.z_axis_id = p.addUserDebugLine(lineFromXYZ, z_axis[0], z_axis[1], lineWidth=3.0)
+        else:
+            self.x_axis_id = p.addUserDebugLine(
+                lineFromXYZ, x_axis[0], x_axis[1], lineWidth=3.0, replaceItemUniqueId=self.x_axis_id
+            )
+            self.y_axis_id = p.addUserDebugLine(
+                lineFromXYZ, y_axis[0], y_axis[1], lineWidth=3.0, replaceItemUniqueId=self.y_axis_id
+            )
+            self.z_axis_id = p.addUserDebugLine(
+                lineFromXYZ, z_axis[0], z_axis[1], lineWidth=3.0, replaceItemUniqueId=self.z_axis_id
+            )
+        # todo: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.i3ffpefe7f3
 
     @register.inputs(tick=Space(shape=(), dtype="int64"), pos=Space(dtype="float32"), orientation=Space(dtype="float32"))
     @register.outputs(image=Space(dtype="uint8"))
@@ -523,38 +558,43 @@ class CameraSensor(EngineNode):
             self.orientation = orientation.msgs[-1]
 
         if pos is not None or orientation is not None:
+            if self.debug:
+                self._debug_plot_camera_pose(self.pos, self.orientation, self._p)
             self.cb_args["viewMatrix"] = self._view_matrix(self.pos, self.orientation, self._p._client)
         img = self.cam_cb()
         return dict(image=img)
 
     @staticmethod
     def _view_matrix(position, orientation, physicsClientId):
-        r = Rotation.from_quat(orientation)
+        r = R.from_quat(orientation)
         cameraEyePosition = position
-        cameraTargetPosition = r.as_matrix()[:, 2]
-        cameraUpVector = -r.as_matrix()[:, 1]
+        cameraTargetPosition = r.as_matrix()[:, 2] + position  # Assume z axis points outward of the image.
+        cameraUpVector = -r.as_matrix()[:, 1]  # Assume y-axis is the up vector in the image
         return pybullet.computeViewMatrix(
             cameraEyePosition, cameraTargetPosition, cameraUpVector, physicsClientId=physicsClientId
         )
 
     @staticmethod
     def _camera_measurement(p, mode, cb_args):
-        if mode == "rgb":
+        if mode in ["rgb", "bgr"]:
 
             def cb():
                 _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                rgba = rgba if mode == "rgb" else cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
                 return rgba[:, :, :3]
 
-        elif mode == "rgba":
+        elif mode in ["rgba", "bgra"]:
 
             def cb():
                 _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                rgba = rgba if mode == "rgba" else cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
                 return rgba[:, :, :4]
 
-        elif mode == "rgbd":
+        elif mode in ["rgbd", "bgrd"]:
 
             def cb():
                 _, _, rgba, depth, seg = p.getCameraImage(**cb_args)
+                rgba = rgba if mode == "rgbd" else cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
                 depth *= 255  # Convert depth to uint8
                 rgba[:, :, 3] = depth.astype("uint8")  # replace alpha channel with depth
                 return rgba[:, :, :4]

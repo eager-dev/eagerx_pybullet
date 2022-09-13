@@ -12,7 +12,7 @@ ENV = eagerx.process.ENVIRONMENT
 @pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
-    eagerx.set_log_level(eagerx.WARN)
+    eagerx.set_log_level(eagerx.DEBUG)
 
     # Define unique name for test environment
     name = f"{control_mode}_{p}"
@@ -68,10 +68,10 @@ def test_eagerx_pybullet(control_mode, p):
     )
 
     # Make backend
-    # from eagerx.backends.ros1 import Ros1
-    # backend = Ros1.make()
-    from eagerx.backends.single_process import SingleProcess
-    backend = SingleProcess.make()
+    from eagerx.backends.ros1 import Ros1
+    backend = Ros1.make()
+    # from eagerx.backends.single_process import SingleProcess
+    # backend = SingleProcess.make()
 
     # Define environment
     class TestEnv(eagerx.BaseEnv):

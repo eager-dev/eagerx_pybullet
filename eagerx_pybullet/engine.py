@@ -9,9 +9,9 @@ from eagerx.core.entities import Engine
 
 def check_if_pybullet_is_installed():
     try:
-        import pybullet
-        import pybullet_data
-        from pybullet_utils import bullet_client
+        import pybullet  # noqa
+        import pybullet_data  # noqa
+        from pybullet_utils import bullet_client  # noqa
     except ImportError as e:
         from gym import error
 
@@ -96,7 +96,7 @@ class PybulletEngine(Engine):
         # Initialzize
         from eagerx_pybullet.world import World
 
-        world = World(
+        self.world = World(
             self._p,
             gravity=spec.config.gravity,
             world_fn=spec.config.world_fn,
@@ -110,7 +110,7 @@ class PybulletEngine(Engine):
             )
             self._p.setPhysicsEngineParameter(**spec.config.physics_engine_params)
         # Create pybullet simulator that will be shared with all EngineStates & EngineNodes (if launched in same process).
-        self.simulator = dict(client=self._p, world=world, robots={})
+        self.simulator = dict()
 
     def _start_simulator(self, gui, egl):
         import pybullet
@@ -147,10 +147,10 @@ class PybulletEngine(Engine):
 
     def add_object(
         self,
-        spec,
+        name,
         urdf: str,
-        basePosition: List = [0, 0, 0],
-        baseOrientation: List = [0, 0, 0, 0],
+        basePosition: List = [0, 0, 0],  # noqa
+        baseOrientation: List = [0, 0, 0, 0],  # noqa
         fixed_base: bool = True,
         self_collision: bool = False,
         globalScaling: float = 1.0,
@@ -159,7 +159,7 @@ class PybulletEngine(Engine):
         """
         Adds an object to the connected Pybullet physics server.
 
-        :param spec: The object specificaiton of the :class:`~eagerx.core.entities.Object` that is to be added.
+        :param name: Name of the :class:`~eagerx.core.entities.Object` that is to be added.
         :param urdf: A fullpath (ending with .urdf), a key that points to the urdf (xml)string on the rosparam server,
                      or an urdf within pybullet's search path. The `pybullet_data` package is included in the search path.
         :param basePosition: Base position of the object [x, y, z].
@@ -171,11 +171,9 @@ class PybulletEngine(Engine):
                       See https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit# for all
                       available flags.
         """
-        obj_name = spec.config.name
-        entity_id = spec.config.entity_id
 
         # add objects to simulator (we have a ref to the simulator with self.simulator)
-        self.backend.loginfo(f'Adding object "{obj_name}" of type "{entity_id}" to the simulator.')
+        self.backend.loginfo(f'Adding object "{name}" to the simulator.')
 
         # Add self collision to flag
         import pybullet
@@ -189,17 +187,18 @@ class PybulletEngine(Engine):
         if urdf:
             from eagerx_pybullet.robot import URDFBasedRobot
 
-            self.simulator["robots"][obj_name] = URDFBasedRobot(
+            robot = URDFBasedRobot(
                 bullet_client=self._p,
                 model_urdf=urdf,  # Can be path (ending with .urdf), or ros param key to urdf (xml)string.
-                robot_name=obj_name,
+                robot_name=name,
                 basePosition=basePosition,
                 baseOrientation=baseOrientation,
                 fixed_base=fixed_base,
                 flags=flags,
             )
+            self.simulator[name].update(object=robot, world=self.world, client=self._p)
         else:  # if no urdf is provided, create dummy robot.
-            self.simulator["robots"][obj_name] = None
+            self.simulator[name].update(object=None, world=self.world, client=self._p)
 
     @register.states(
         erp=eagerx.Space(low=0.2, high=0.2, shape=()),
@@ -220,7 +219,7 @@ class PybulletEngine(Engine):
 
     def callback(self, t_n: float):
         """Here, we step the world by 1/rate seconds."""
-        self.simulator["world"].step()
+        self.world.step()
 
     def shutdown(self) -> None:
         """Disconnects the engine from the pybullet physics server"""

@@ -1,4 +1,3 @@
-from eagerx.utils.utils import get_param_with_blocking
 import uuid
 import numpy as np
 import os
