@@ -43,7 +43,7 @@ def test_eagerx_pybullet(control_mode, p):
                       urdf="cube_small.urdf",
                       rate=rate,
                       # sensors=["pos", "vel", "orientation", "angular_vel"],
-                      sensors=["pos", "vel"],
+                      sensors=["pos", "vel", "orientation"],
                       states=["pos", "vel", "orientation", "angular_vel"],
                       # states=[],
                       )
