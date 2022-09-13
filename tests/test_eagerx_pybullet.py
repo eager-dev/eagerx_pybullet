@@ -81,6 +81,7 @@ def test_eagerx_pybullet(control_mode, p):
     # backend = Ros1.make()
     from eagerx.backends.single_process import SingleProcess
     backend = SingleProcess.make()
+    SingleProcess.MIN_THREADS = 16
 
     # Define environment
     class TestEnv(eagerx.BaseEnv):
