@@ -8,7 +8,7 @@ NP = eagerx.process.NEW_PROCESS
 ENV = eagerx.process.ENVIRONMENT
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(20)
 @pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
