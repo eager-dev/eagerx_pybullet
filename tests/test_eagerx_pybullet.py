@@ -68,10 +68,10 @@ def test_eagerx_pybullet(control_mode, p):
     )
 
     # Make backend
-    # from eagerx.backends.ros1 import Ros1
-    # backend = Ros1.make()
-    from eagerx.backends.single_process import SingleProcess
-    backend = SingleProcess.make()
+    from eagerx.backends.ros1 import Ros1
+    backend = Ros1.make()
+    # from eagerx.backends.single_process import SingleProcess
+    # backend = SingleProcess.make()
 
     # Define environment
     class TestEnv(eagerx.BaseEnv):
