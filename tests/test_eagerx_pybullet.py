@@ -52,7 +52,7 @@ def test_eagerx_pybullet(control_mode, p):
     from example.objects.vx300s.objects import Vx300s
     arm = Vx300s.make(
         "viper",
-        sensors=["pos"],
+        sensors=["pos", "vel"],
         # sensors=["pos", "vel", "ft", "at"],
         actuators=["joint_control", "gripper_control"],
         # actuators=["joint_control"],
