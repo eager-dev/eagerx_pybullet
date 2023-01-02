@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.11 (2023-01-02)
+### Fix
+* Use float instead of np.float and update eagerx ([`a84b222`](https://github.com/eager-dev/eagerx_pybullet/commit/a84b2229fb94df22114aa9c63bad57a14ba1308b))
+* Np.float deprecated, use float instead ([`84a8ca4`](https://github.com/eager-dev/eagerx_pybullet/commit/84a8ca48159d281cbe3c5c590c5728455cd991c2))
+
 ## v0.1.10 (2022-09-13)
 ### Fix
 * Bgr encoding, graph refactor ([#37](https://github.com/eager-dev/eagerx_pybullet/issues/37)) ([`36528c7`](https://github.com/eager-dev/eagerx_pybullet/commit/36528c72d52bd7bf86ff6f847febe482db19e604))
