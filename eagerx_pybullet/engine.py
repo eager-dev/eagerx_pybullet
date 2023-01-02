@@ -205,7 +205,7 @@ class PybulletEngine(Engine):
         contactERP=eagerx.Space(low=0.2, high=0.2, shape=()),
         frictionERP=eagerx.Space(low=0.2, high=0.2, shape=()),
     )
-    def reset(self, erp: np.float = None, contactERP: np.float = None, frictionERP: np.float = None):
+    def reset(self, erp: float = None, contactERP: float = None, frictionERP: float = None):
         """Set any of the physics engine parameters (registered as states) if they were selected."""
         physics_engine_params = {}
         if erp:
