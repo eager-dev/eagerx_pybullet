@@ -42,8 +42,8 @@ class Solid(Object):
         # Modify default agnostic params
         # Only allow changes to the agnostic params (rates, windows, (space)converters, etc...
         spec.config.name = name
-        spec.config.sensors = sensors if sensors is not None else ["pos", "vel", "orientation", "angular_vel"]
-        spec.config.states = states if states is not None else ["pos", "vel", "orientation", "angular_vel"]
+        spec.config.sensors = sensors if isinstance(sensors, list) is not None else ["pos", "vel", "orientation", "angular_vel"]
+        spec.config.states = states if isinstance(states, list) is not None else ["pos", "vel", "orientation", "angular_vel"]
 
         # Add registered agnostic params
         spec.config.urdf = urdf
