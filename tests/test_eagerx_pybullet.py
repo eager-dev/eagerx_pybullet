@@ -75,18 +75,21 @@ def test_eagerx_pybullet(control_mode, p):
 
     # Define environment
     class TestEnv(eagerx.BaseEnv):
-        def __init__(self, name, rate, graph, engine, backend, force_start):
+        def __init__(self, name, rate, graph, engine, backend, force_start, render_mode: str = None):
             self.steps = 0
-            super().__init__(name, rate, graph, engine, backend=backend, force_start=force_start)
+            super().__init__(name, rate, graph, engine, backend=backend, force_start=force_start, render_mode=render_mode)
 
         def step(self, action):
             obs = self._step(action)
             # Determine when is the episode over
             self.steps += 1
             done = self.steps > 500
-            return obs, 0, done, {}
+            truncated = self.steps > 500
+            if self.render_mode == "human":
+                self.render()
+            return obs, 0, truncated, done, {}
 
-        def reset(self):
+        def reset(self, seed=None, options=None):
             # Reset steps counter
             self.steps = 0
 
@@ -95,17 +98,19 @@ def test_eagerx_pybullet(control_mode, p):
 
             # Perform reset
             obs = self._reset(states)
-            return obs
+            if self.render_mode == "human":
+                self.render()
+            return obs, {}
 
     # Initialize Environment
     env = TestEnv(name=name, rate=rate, graph=graph, engine=engine, backend=backend, force_start=True)
 
     # Evaluate for 30 seconds in simulation
-    _, action = env.reset(), env.action_space.sample()
+    (_obs, _info), action = env.reset(), env.action_space.sample()
     for i in range(3):
-        obs, reward, done, info = env.step(action)
+        obs, reward, truncated, done, info = env.step(action)
         if done:
-            _, action = env.reset(), env.action_space.sample()
+            (_obs, _info), action = env.reset(), env.action_space.sample()
             print(f"Episode {i}")
     print("\n[Finished]")
 
