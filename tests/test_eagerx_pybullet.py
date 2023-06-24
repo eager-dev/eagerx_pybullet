@@ -83,11 +83,11 @@ def test_eagerx_pybullet(control_mode, p):
             obs = self._step(action)
             # Determine when is the episode over
             self.steps += 1
-            done = self.steps > 500
+            terminated = False
             truncated = self.steps > 500
             if self.render_mode == "human":
                 self.render()
-            return obs, 0, truncated, done, {}
+            return obs, 0, terminated, truncated, {}
 
         def reset(self, seed=None, options=None):
             # Reset steps counter
@@ -108,8 +108,8 @@ def test_eagerx_pybullet(control_mode, p):
     # Evaluate for 30 seconds in simulation
     (_obs, _info), action = env.reset(), env.action_space.sample()
     for i in range(3):
-        obs, reward, truncated, done, info = env.step(action)
-        if done:
+        obs, reward, terminated, truncated, info = env.step(action)
+        if terminated or truncated:
             (_obs, _info), action = env.reset(), env.action_space.sample()
             print(f"Episode {i}")
     print("\n[Finished]")
