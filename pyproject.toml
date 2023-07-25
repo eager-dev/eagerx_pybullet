@@ -10,7 +10,7 @@ documentation = "https://eagerx.readthedocs.io/en/master/"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-eagerx = "^0.1.36"
+eagerx = "^0.1.38"
 pybullet = "^3.2.1"
 
 [tool.poetry.dev-dependencies]
