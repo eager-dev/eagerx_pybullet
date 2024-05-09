@@ -18,7 +18,7 @@ eagerx_pybullet package
     :depth: 2
 
 What is the *eagerx_pybullet* package?
-=================================
+======================================
 This repository/package contains the *PybulletEngine* for simulating robots with EAGERx in pybullet.
 EAGERx (Engine Agnostic Graph Environments for Robotics) enables users to easily define new tasks, switch from one sensor to another, and switch from simulation to reality with a single line of code by being invariant to the physics engine.
 
