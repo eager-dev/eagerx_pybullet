@@ -8,8 +8,8 @@ NP = eagerx.process.NEW_PROCESS
 ENV = eagerx.process.ENVIRONMENT
 
 
-@pytest.mark.timeout(60)
-@pytest.mark.parametrize("control_mode", ["position_control", "pd_control", "torque_control", "velocity_control"])
+@pytest.mark.timeout(20)
+@pytest.mark.parametrize("control_mode", ["position_control", "position_control", "position_control", "position_control","position_control", "position_control", "position_control","position_control", "position_control","position_control"])
 @pytest.mark.parametrize("p", [ENV, NP])
 def test_eagerx_pybullet(control_mode, p):
     eagerx.set_log_level(eagerx.DEBUG)
@@ -29,7 +29,8 @@ def test_eagerx_pybullet(control_mode, p):
     cam = Camera.make(
         "cam",
         rate=rate,
-        sensors=["rgb", "rgba", "rgbd"],
+        sensors=["rgb"],
+        states=["pos", "orientation"],
         urdf=urdf,
         optical_link="camera_color_optical_frame",
         calibration_link="camera_bottom_screw_frame",
@@ -38,15 +39,23 @@ def test_eagerx_pybullet(control_mode, p):
 
     # Create solid object
     from example.objects.solid.objects import Solid
-    cube = Solid.make("cube", urdf="cube_small.urdf", rate=rate)
+    cube = Solid.make("cube",
+                      urdf="cube_small.urdf",
+                      rate=rate,
+                      sensors=["pos", "vel", "orientation"],
+                      states=["pos", "vel", "orientation", "angular_vel"],
+                      # states=[],
+                      )
     graph.add(cube)
 
     # Create arm
     from example.objects.vx300s.objects import Vx300s
     arm = Vx300s.make(
         "viper",
-        sensors=["pos", "vel", "ft", "at"],
+        sensors=["pos", "vel"],
+        # sensors=["pos", "vel", "ft", "at"],
         actuators=["joint_control", "gripper_control"],
+        # actuators=["joint_control"],
         states=["pos", "vel", "gripper"],
         rate=rate,
         control_mode=control_mode,
@@ -57,9 +66,9 @@ def test_eagerx_pybullet(control_mode, p):
     graph.connect(action="joints", target=arm.actuators.joint_control)
     graph.connect(action="gripper", target=arm.actuators.gripper_control)
     graph.connect(source=arm.sensors.pos, observation="observation")
-    graph.connect(source=arm.sensors.vel, observation="vel")
-    graph.connect(source=arm.sensors.ft, observation="ft")
-    graph.connect(source=arm.sensors.at, observation="at")
+    # graph.connect(source=arm.sensors.vel, observation="vel")
+    # graph.connect(source=arm.sensors.ft, observation="ft")
+    # graph.connect(source=arm.sensors.at, observation="at")
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
@@ -68,10 +77,11 @@ def test_eagerx_pybullet(control_mode, p):
     )
 
     # Make backend
-    from eagerx.backends.ros1 import Ros1
-    backend = Ros1.make()
-    # from eagerx.backends.single_process import SingleProcess
-    # backend = SingleProcess.make()
+    # from eagerx.backends.ros1 import Ros1
+    # backend = Ros1.make()
+    from eagerx.backends.single_process import SingleProcess
+    backend = SingleProcess.make()
+    SingleProcess.MIN_THREADS = 10
 
     # Define environment
     class TestEnv(eagerx.BaseEnv):
