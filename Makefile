@@ -4,6 +4,9 @@ PACKAGE_NAME=eagerx_pybullet
 SHELL=/bin/bash
 LINT_PATHS=${PACKAGE_NAME}/
 
+source_ros:
+	bash ./scripts/empty.bash
+
 pytest:
 	bash ./scripts/run_tests.sh
 
